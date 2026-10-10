@@ -1,6 +1,6 @@
 # UI parity: tools, handles, modifiers and feel
 
-> **Last reviewed:** 2026-10-10 · **Last updated:** 2026-10-10 · **Change:** major (first version: tools, transform, nudging, snapping, modifiers, navigation, shortcuts, panels audited from source and open issues) · **Target:** Adobe Photoshop 2026
+> **Last reviewed:** 2026-10-10 · **Last updated:** 2026-10-11 · **Change:** minor (layer picking, held Zoom, trackpad navigation and short-gradient correctness) · **Target:** Adobe Photoshop 2026
 
 How PhotoCraft's direct manipulation compares with Photoshop 2026 (27.11.0): the toolbox, the
 handles and modifier keys of each gesture, nudging, snapping, numeric precision, navigation,
@@ -156,17 +156,22 @@ Triangle and Curvature Pen (minus legacy Rounded Rectangle and Targeted Adjustme
 | Behaviour | Status | Evidence |
 |---|---|---|
 | Space = Hand, ⌘Space / ⌘⌥Space = zoom in/out, spring-loaded while held | done | `hold_keys.rs` |
-| Hold any tool letter for a temporary tool | missing | #2672 |
+| Hold any tool letter for a temporary tool | partial | Z temporarily activates Zoom and restores the selected tool; quick taps select Zoom; unfinished Pen paths and Crop frames survive. Other tool letters remain missing. `spring_zoom.rs`, #2672 |
 | Scrubby zoom | done | `zoom_tool.rs` |
 | Flick panning | missing | `tools.enable_flick_panning` unread |
 | Animated zoom | missing | unread pref; #566 |
 | Double-click Zoom tool = 100%, double-click Hand = fit | partial | Zoom missing (#2508) |
 | ⌥-wheel zoom in gentle steps | missing | UI-217-18 |
-| Wheel, smooth scrolling and pinch as in Photoshop | partial | #2485, #2463, #1989 |
+| Wheel, smooth scrolling and pinch as in Photoshop | partial | Canvas pans consume raw wheel/trackpad displacement in the arriving frame, without added smoothing or a dropped gesture-end tail (#1989, verified 2026-10-11). Other wheel/pinch requests #2485, #2463 remain. |
 | Trackpad rotate drives Rotate View | done | `rotate_view.rs:136` |
 | Zoom levels to 3200% and beyond | partial | #1813 |
 | Physical 100% at any display scale | done | #1943 |
 | ⌃Tab / ⌃⇧Tab switch document tabs | missing | #2340 |
+
+Live Gradient Fill drags now reach half a document pixel on either axis, independently of
+canvas size (#1243). The unmoved endpoint stays fixed when editing the other endpoint, and
+Properties accepts and displays the resulting small scale. CPU/GPU geometry uses the same
+positive numerical guard; the existing 150% maximum is retained.
 
 ## Keyboard shortcuts
 
@@ -177,6 +182,16 @@ Triangle and Curvature Pen (minus legacy Rounded Rectangle and Targeted Adjustme
 | Shortcut audit | 214 → 0 failures (2026-10-07) | measured then; not re-run here |
 | `.kys` import | done (`engine/src/kys.rs`) | |
 | Shortcut glyphs per platform | done (UI-217-19) | |
+
+The reassignable **Select Layer Under Cursor** command uses Ctrl+Alt+Shift+U on Windows/Linux
+and Cmd+Option+Shift+U on macOS (#2298). It works independently of Auto-Select and the active
+tool, uses document-space hit testing through zoom/rotation/flip, and skips hidden, locked and
+transparent layers. It is listed in Preferences > Keyboard Shortcuts > Layer.
+
+Holding Z uses the [200 ms spring-loaded timing](https://helpx.adobe.com/photoshop/desktop/get-started/set-up-toolbars-panels/spring-loaded-shortcuts.html);
+Alt reverses Zoom direction. Releasing Z during a pointer gesture keeps that gesture in Zoom
+until pointer release. Focus loss or an explicit tool change cancels the hold. This implements
+the Zoom request in #2672, without claiming spring-loaded parity for all tool letters.
 
 ## Panels and workspace
 
@@ -203,4 +218,5 @@ Paragraph; the rest open as in-app floating windows.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-10-11 | minor | Reassignable layer-under-cursor selection (#2298), spring-loaded Z Zoom (#2672), immediate canvas scrolling (#1989), and short gradients (#1243), verified with full-UI input tests |
 | 2026-10-10 | major | First version, from a source audit against Photoshop 2026 27.11.0's shortcuts file and the open issues |

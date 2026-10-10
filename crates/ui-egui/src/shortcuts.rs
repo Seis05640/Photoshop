@@ -276,6 +276,7 @@ pub fn clipboard_keys(ctx: &egui::Context, typing: bool, raw: &mut egui::RawInpu
 }
 
 pub fn handle(app: &mut PhotocraftApp, ctx: &egui::Context) {
+    crate::spring_zoom::poll(app, ctx);
     // However the tool was picked (toolbar, flyout, shortcut, automation), its group's key brings
     // it back later (#2608).
     app.ui.remember_group_tool();
@@ -480,11 +481,20 @@ pub fn handle(app: &mut PhotocraftApp, ctx: &egui::Context) {
     // Tool keys; pressing the key of the current group cycles within it. With Preferences ›
     // Tools › Use Shift Key for Tool Switch, only ⇧+key cycles and the plain key keeps the
     // group's current tool. From another group, the key picks the group's last-used tool.
+    // Alt may already be held when Z is pressed to temporarily zoom out.
+    if ctx.input_mut(|i| i.consume_key(Modifiers::ALT, Key::Z)) {
+        crate::spring_zoom::press(app, ctx);
+        return;
+    }
     let shift_switch = app.session.prefs().tools.use_shift_key_for_tool_switch;
     for t in Tool::ALL {
         let Some(k) = Key::from_name(&t.key().to_string()) else { continue };
         let cycle_shift = shift_switch && ctx.input_mut(|i| i.consume_key(Modifiers::SHIFT, k));
         if cycle_shift || pressed(k) {
+            if k == Key::Z {
+                crate::spring_zoom::press(app, ctx);
+                return;
+            }
             let group: Vec<Tool> = Tool::ALL.iter().copied().filter(|x| x.key() == t.key()).collect();
             app.ui.tool = match group.iter().position(|x| *x == app.ui.tool) {
                 Some(i) if shift_switch && !cycle_shift => group[i],
