@@ -1,6 +1,7 @@
 [workspace]
 resolver = "3"
 members = ["crates/*", "apps/*", "xtask"]
+exclude = ["vendor"]
 default-members = ["crates/*", "apps/photocraft", "apps/photocraft-cli", "xtask"]
 
 [workspace.package]
@@ -112,3 +113,7 @@ opt-level = 3
 opt-level = 3
 [profile.wasm-release.package.photocraft-paint]
 opt-level = 3
+
+# Vendored, patched third-party crates (see vendor/README.md). Each patch is meant to go upstream.
+[patch.crates-io]
+winit = { path = "vendor/winit" }
