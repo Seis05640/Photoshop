@@ -281,16 +281,36 @@ fn translate_doc(doc: &mut Document, cmd: &str, dx: i32, dy: i32) -> Result<()> 
 }
 
 /// Crops the document to `r` (in current document coordinates).
-fn crop_doc(doc: &mut Document, cmd: &str, r: Rect, delete_pixels: bool) -> Result<()> {
+/// A frame that extends past the canvas fills the Background's new area with `extension` (the
+/// background colour, as Photoshop's Crop tool does); other layers get transparent pixels there.
+fn crop_doc(doc: &mut Document, cmd: &str, r: Rect, delete_pixels: bool, extension: [f32; 4]) -> Result<()> {
     // The origin moves to (0, 0); `-i32::MIN` has no i32 value (#959).
     let (Some(dx), Some(dy)) = (r.x0.checked_neg(), r.y0.checked_neg()) else {
         return Err(bad(cmd, format!("the crop origin ({}, {}) can't be moved to (0, 0) within the 32-bit coordinate range", r.x0, r.y0)));
     };
+    let old_canvas = doc.bounds();
+    let extends = r.x0 < old_canvas.x0 || r.y0 < old_canvas.y0 || r.x1 > old_canvas.x1 || r.y1 > old_canvas.y1;
     if delete_pixels {
         for_each_surface(&mut doc.layers, false, &mut |surf, _| *surf = crop_surface(surf, r));
     }
     translate_doc(doc, cmd, dx, dy)?;
     doc.size = Size::new(r.width(), r.height());
+    // A Background cannot hold transparent pixels: like an opaque Canvas Size extension, the area
+    // an extending Crop adds is filled with the extension (background) colour.
+    if extends
+        && let Some(bg) = doc.layers.first_mut().filter(|l| crate::extra_cmds::is_background(l))
+        && let LayerContent::Raster(surf) = &mut bg.content
+    {
+        let old = old_canvas.translate(dx, dy);
+        let fmt = surf.format();
+        let px = photocraft_raster::from_rgba(&fmt, [extension[0], extension[1], extension[2], 1.0]);
+        let keep = surf.content_bounds().intersect(&old);
+        let saved = surf.to_interleaved(keep);
+        surf.fill_rect(Rect::from_xywh(0, 0, r.width(), r.height()), &px);
+        if !keep.is_empty() {
+            surf.write_interleaved(keep, &saved);
+        }
+    }
     // A single artboard is the page (including PDF pages opened in separate tabs).
     // Keep its printable boundary in sync with Crop/Trim, rather than exporting the
     // old sheet with the cropped pixels sitting in an oversized blank page.
@@ -437,8 +457,9 @@ fn crop(s: &mut Session, p: &Value) -> Result<Value> {
         return Err(EngineError::Other("nothing to crop: pass x/y/width/height or make a selection".into()));
     }
     s.set_sampler_map(photocraft_geom::Affine::translate(-f64::from(r.x0), -f64::from(r.y0)));
+    let extension = s.tools.background;
     s.edit("Crop", |doc, _| {
-        crop_doc(doc, "image.crop", r, delete)?;
+        crop_doc(doc, "image.crop", r, delete, extension)?;
         doc.selection = None;
         target.apply(doc);
         Ok(())
@@ -572,8 +593,9 @@ fn rotated_crop(s: &mut Session, r: Rect, angle: f64, delete: bool, crop_target:
         crate::mode_cmds::rotate_arbitrary(s, &json!({"angle": angle, "direction": "ccw"}))?;
         // Color Sampler points follow the crop's origin shift too (the rotation moved them above).
         s.set_sampler_map(photocraft_geom::Affine::translate(-f64::from(target.x0), -f64::from(target.y0)));
+        let extension = s.tools.background;
         s.edit("Crop", |doc, _| {
-            crop_doc(doc, CMD, target, delete)?;
+            crop_doc(doc, CMD, target, delete, extension)?;
             doc.selection = None;
             crop_target.apply(doc);
             Ok(())
@@ -616,7 +638,8 @@ fn trim(s: &mut Session, p: &Value) -> Result<Value> {
         if side("bottom") { b.y1 } else { canvas.y1 },
     );
     s.set_sampler_map(photocraft_geom::Affine::translate(-f64::from(r.x0), -f64::from(r.y0)));
-    s.edit("Trim", |doc, _| crop_doc(doc, "image.trim", r, true))?;
+    let extension = s.tools.background;
+    s.edit("Trim", |doc, _| crop_doc(doc, "image.trim", r, true, extension))?;
     Ok(json!({ "x": r.x0, "y": r.y0, "width": r.width(), "height": r.height() }))
 }
 
@@ -997,6 +1020,81 @@ mod tests {
         s.execute("image.crop", json!({"x": -10, "y": 0, "width": 60, "height": 20})).unwrap();
         assert_eq!(doc(&s).size, Size::new(60, 20));
         assert_eq!(doc(&s).layers[1].surface().unwrap().pixel(20, 5), vec![1.0, 0.0, 0.0, 1.0]);
+    }
+
+    #[test]
+    fn crop_extension_fills_the_background_with_the_background_colour() {
+        let mut shrink = Session::new();
+        shrink.execute("file.new", json!({"width": 16, "height": 16, "background": "#ff0000"})).unwrap();
+        shrink.execute("image.crop", json!({"x": 2, "y": 0, "width": 12, "height": 16})).unwrap();
+        let layer = &doc(&shrink).layers[0];
+        assert_eq!(layer.name, "Background", "a shrink-only crop keeps the Background");
+        assert!(layer.locks.transparency && layer.locks.position);
+
+        let mut s = Session::new();
+        s.execute("file.new", json!({"width": 16, "height": 16, "background": "#ff0000"})).unwrap();
+        s.tools.background = [0.0, 1.0, 0.0, 1.0];
+        s.execute("image.crop", json!({"x": -4, "y": 0, "width": 20, "height": 16})).unwrap();
+        let layer = &doc(&s).layers[0];
+        assert_eq!(layer.name, "Background", "an extending crop keeps the Background (#3081)");
+        assert!(layer.locks.transparency && layer.locks.position);
+        assert_eq!(layer.surface().unwrap().rgba(1, 8), [0.0, 1.0, 0.0, 1.0], "the added border takes the background colour");
+        assert_eq!(layer.surface().unwrap().rgba(8, 8), [1.0, 0.0, 0.0, 1.0], "the original pixels stay");
+
+        s.execute("edit.fill", json!({"color": "#0000ff"})).unwrap();
+        let layer = &doc(&s).layers[0];
+        assert_eq!(layer.surface().unwrap().rgba(1, 8), [0.0, 0.0, 1.0, 1.0], "Fill paints the extended border");
+        assert_eq!(layer.surface().unwrap().rgba(8, 8), [0.0, 0.0, 1.0, 1.0]);
+
+        s.execute("edit.undo", json!({})).unwrap();
+        s.execute("edit.undo", json!({})).unwrap();
+        let layer = &doc(&s).layers[0];
+        assert_eq!(doc(&s).size, Size::new(16, 16));
+        assert_eq!(layer.surface().unwrap().rgba(8, 8), [1.0, 0.0, 0.0, 1.0]);
+        assert_eq!(layer.surface().unwrap().content_bounds(), Rect::new(0, 0, 16, 16), "undo removes the filled border");
+
+        // A normal layer gets transparent pixels in the added area.
+        let mut s = Session::new();
+        s.execute("file.new", json!({"width": 16, "height": 16, "background": "#ff0000"})).unwrap();
+        s.execute("layer.new.layerFromBackground", json!({})).unwrap();
+        s.execute("image.crop", json!({"x": -4, "y": 0, "width": 20, "height": 16})).unwrap();
+        assert_eq!(doc(&s).layers[0].surface().unwrap().rgba(1, 8), [0.0; 4]);
+    }
+
+    #[test]
+    fn extending_crop_and_trim_keep_the_background_and_single_artboard_in_sync() {
+        for delete in [false, true] {
+            let mut s = Session::new();
+            s.execute("file.new", json!({"width": 16, "height": 16, "background": "#ff0000"})).unwrap();
+            let board = s.execute("layer.new.artboard", json!({"rect": [0, 0, 16, 16], "background": "transparent"})).unwrap();
+            let board = LayerId(board["layer"].as_u64().unwrap());
+            s.tools.background = [0.0, 1.0, 0.0, 1.0];
+            let check = |s: &Session, width, border| {
+                assert_eq!(doc(s).size, Size::new(width, 16));
+                assert_eq!(doc(s).layer(board).unwrap().artboard().unwrap().rect, Rect::from_xywh(0, 0, width, 16));
+                let background = &doc(s).layers[0];
+                assert_eq!(background.name, "Background");
+                assert!(background.locks.transparency && background.locks.position);
+                assert_eq!(background.surface().unwrap().rgba(1, 8), border);
+                assert_eq!(background.surface().unwrap().rgba(8, 8), [1.0, 0.0, 0.0, 1.0]);
+            };
+            let past = s.active().unwrap().history.past_len();
+            s.execute("image.crop", json!({"x": -4, "y": 0, "width": 20, "height": 16, "deleteCroppedPixels": delete})).unwrap();
+            check(&s, 20, [0.0, 1.0, 0.0, 1.0]);
+            assert_eq!(s.active().unwrap().history.past_len(), past + 1);
+            s.execute("image.trim", json!({"basedOn": "topLeft"})).unwrap();
+            check(&s, 16, [1.0, 0.0, 0.0, 1.0]);
+            assert_eq!(s.active().unwrap().history.past_len(), past + 2);
+            s.execute("edit.undo", json!({})).unwrap();
+            check(&s, 20, [0.0, 1.0, 0.0, 1.0]);
+            s.execute("edit.undo", json!({})).unwrap();
+            check(&s, 16, [1.0, 0.0, 0.0, 1.0]);
+            assert_eq!(doc(&s).layers[0].surface().unwrap().content_bounds(), Rect::new(0, 0, 16, 16));
+            s.execute("edit.redo", json!({})).unwrap();
+            check(&s, 20, [0.0, 1.0, 0.0, 1.0]);
+            s.execute("edit.redo", json!({})).unwrap();
+            check(&s, 16, [1.0, 0.0, 0.0, 1.0]);
+        }
     }
 
     /// A document (`mode`, `depth`) with a white Background and a layer holding a red pixel at
