@@ -21,6 +21,7 @@ pub enum Format {
     Hdr,
     /// Encode-only behind the `avif` feature; see [`ASYMMETRIC_EXCEPTIONS`].
     Avif,
+    Jxl,
     /// HEIF/HEIC (HEVC-coded): read-only; see [`ASYMMETRIC_EXCEPTIONS`].
     Heif,
 }
@@ -119,6 +120,7 @@ impl Format {
             Format::Hdr => "Radiance HDR",
             Format::Avif => "AVIF",
             Format::Heif => "HEIF",
+            Format::Jxl => "JXL",
         }
     }
 
@@ -140,6 +142,7 @@ impl Format {
             Format::Hdr => &["hdr"],
             Format::Avif => &["avif"],
             Format::Heif => &["heic", "heif", "hif"],
+            Format::Jxl => &["jxl"],
         }
     }
 
@@ -159,6 +162,7 @@ impl Format {
             Format::Hdr => "image/vnd.radiance",
             Format::Avif => "image/avif",
             Format::Heif => "image/heif",
+            Format::Jxl => "image/jxl",
         }
     }
 
@@ -207,7 +211,8 @@ pub fn caps(format: Format) -> FormatCaps {
         Format::Avif => FormatCaps { read: false, write: cfg!(feature = "avif"), lossy: true, ..base },
         Format::Heif => {
             FormatCaps { read: cfg!(feature = "heif"), write: false, depths: &[S::U8, S::U16], icc: true, exif: true, xmp: true, lossy: true, ..base }
-        }
+        },
+        Format::Jxl => FormatCaps { read: cfg!(feature = "jxl"), write: false, depths: &[S::U8, S::U16], ..base }
     }
 }
 

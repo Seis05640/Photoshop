@@ -2,6 +2,7 @@ pub(crate) mod deep_exr;
 pub(crate) mod exr;
 pub(crate) mod exr_cryptomatte;
 pub(crate) mod heif;
+pub(crate) mod jxl;
 pub(crate) mod jpeg;
 pub(crate) mod png;
 pub(crate) mod pnm;

@@ -24,6 +24,7 @@ pub mod resolution;
 pub mod web;
 
 pub use crate::codecs::exr_cryptomatte::{cryptomatte_id, cryptomatte_key, cryptomatte_preview_color};
+use crate::codecs::jxl;
 pub use crate::codecs::png::encode_indexed as encode_png_indexed;
 pub use crate::codecs::tiff::{PhotoshopTags as TiffPhotoshopTags, photoshop_tags as tiff_photoshop_tags, writes_little_endian as tiff_writes_little_endian};
 pub use crate::codecs::tiff_ifd::{TiffInfo, TiffPage, TiffPageKind};
@@ -71,6 +72,7 @@ pub fn decode_as_with(format: Format, bytes: &[u8], opts: &DecodeOptions) -> Res
         Format::Pnm => pnm::decode(bytes, l),
         Format::OpenExr => exr::decode(bytes, l),
         Format::Heif => heif::decode(bytes, l, opts.keep_orientation),
+        Format::Jxl => jxl::decode(bytes, l, opts.keep_orientation),
         Format::Gif | Format::Bmp | Format::Tga | Format::Ico | Format::Qoi | Format::Hdr | Format::Avif => via_image::decode(format, bytes, l),
     }?;
     // Without a resolution of the format's own (PNG pHYs, TIFF tags, JPEG's metadata), the
@@ -205,6 +207,7 @@ pub fn encode(image: &Image, format: Format, opts: &EncodeOptions) -> Result<Vec
         Format::Pnm => pnm::encode(image, plan, opts),
         Format::OpenExr => exr::encode(image, plan, opts),
         Format::Heif => Err(CodecError::unsupported(format, "encoding is not available in this build")),
+        Format::Jxl => Err(CodecError::unsupported(format, "encoding is not available in this build")),
         Format::Gif | Format::Bmp | Format::Tga | Format::Ico | Format::Qoi | Format::Hdr | Format::Avif => via_image::encode(format, image, plan, opts),
     }
 }
