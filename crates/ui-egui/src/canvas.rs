@@ -3395,6 +3395,18 @@ pub fn canvas_view(app: &mut PhotocraftApp, ui: &mut egui::Ui, idx: usize, rect:
                         pipette_cursor(ui.ctx(), p)
                     }
                 }
+                Tool::Pen => {
+                    if app.session.prefs().cursors.other == photocraft_engine::prefs::OtherCursor::Precise {
+                        egui::CursorIcon::Crosshair
+                    } else {
+                        let mods = crate::workspace_ui::sticky_mods(app, ui.input(|i| i.modifiers));
+                        if mods.command || mods.ctrl {
+                            egui::CursorIcon::Default
+                        } else {
+                            crate::tool_cursor::pen(&painter, p, crate::vector_ui::pen_cursor(app, xf.to_doc(p)))
+                        }
+                    }
+                }
                 // Preferences › Cursors › Other Cursors: Precise shows a crosshair for every tool.
                 Tool::Move | Tool::Type | Tool::VerticalType | Tool::HorizontalTypeMask | Tool::VerticalTypeMask
                     if app.session.prefs().cursors.other == photocraft_engine::prefs::OtherCursor::Precise =>
@@ -4486,7 +4498,11 @@ pub fn tool_event(app: &mut PhotocraftApp, ev: ToolEvent, mods: egui::Modifiers)
             }
             match tool {
                 Tool::Pen => {
-                    crate::vector_ui::pen_down(app, x, y);
+                    let close_point = match raw {
+                        ToolEvent::Down { x: raw_x, y: raw_y, .. } => [raw_x, raw_y],
+                        _ => [x, y],
+                    };
+                    crate::vector_ui::pen_down_at(app, [x, y], close_point);
                     return;
                 }
                 Tool::CurvaturePen => {

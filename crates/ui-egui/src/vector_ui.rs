@@ -239,6 +239,21 @@ pub fn draw_shape_preview(app: &PhotocraftApp, painter: &egui::Painter, xf: &Vie
 // ---------------------------------------------------------------------------------------------
 // Pen
 
+fn pen_close_at(pen: &PenPath, point: [f64; 2], tolerance: f64) -> bool {
+    pen.knots.len() >= 2 && pen.knots.first().is_some_and(|k| (k[0][0] - point[0]).hypot(k[0][1] - point[1]) < tolerance)
+}
+
+/// Cursor feedback uses the same first-anchor hit test as the closing press. A stale draft
+/// cannot close a path in another document, and dragging a handle keeps the drawing cursor.
+pub(crate) fn pen_cursor(app: &PhotocraftApp, point: [f64; 2]) -> crate::tool_cursor::PenCursor {
+    use crate::tool_cursor::PenCursor;
+    let Some(pen) = app.ui.pen.as_ref().filter(|p| p.drawn_with(Tool::Pen) && !p.knots.is_empty() && p.owner.as_ref().is_some_and(|owner| owner.valid(app)))
+    else {
+        return PenCursor::New;
+    };
+    if !pen.dragging && pen_close_at(pen, point, 6.0 / app.point_zoom().max(0.01) as f64) { PenCursor::Close } else { PenCursor::Draw }
+}
+
 fn pen_to_json(pen: &PenPath, closed: bool) -> Value {
     json!({"subpaths": [{"closed": closed, "knots": pen.knots.iter().enumerate().map(|(i, k)| json!({"anchor": k[0], "in": k[1], "out": k[2], "smooth": !pen.unlinked.contains(&i) && (k[1] != k[0] || k[2] != k[0])})).collect::<Vec<_>>()}]})
 }
@@ -246,6 +261,12 @@ fn pen_to_json(pen: &PenPath, closed: bool) -> Value {
 /// Pen press: close on the first anchor, reshape the last anchor's outgoing handle,
 /// or add a new anchor (dragging a new anchor pulls symmetrical handles).
 pub fn pen_down(app: &mut PhotocraftApp, x: f64, y: f64) {
+    pen_down_at(app, [x, y], [x, y]);
+}
+
+/// Closing picks the existing anchor at the pointer, before snapping can move the press.
+/// New anchors and handle edits retain the snapped document coordinates.
+pub(crate) fn pen_down_at(app: &mut PhotocraftApp, [x, y]: [f64; 2], close_point: [f64; 2]) {
     cancel_stale_pen(app);
     if app.ui.pen.as_ref().is_some_and(|p| p.curvature) {
         pen_commit(app, false);
@@ -257,10 +278,9 @@ pub fn pen_down(app: &mut PhotocraftApp, x: f64, y: f64) {
     let tol = 6.0 / app.point_zoom().max(0.01) as f64;
     let pen = app.ui.pen.get_or_insert_with(|| PenPath { owner: Some(owner), ..Default::default() });
     pen.commit_failed = false;
-    if let Some(first) = pen.knots.first().map(|k| k[0])
-        && pen.knots.len() >= 2
-        && (first[0] - x).hypot(first[1] - y) < tol
-    {
+    if pen_close_at(pen, close_point, tol) {
+        app.prefs_rt.snap = None;
+        app.prefs_rt.snap_lines.clear();
         pen_commit(app, true);
         return;
     }
@@ -2009,6 +2029,10 @@ mod tests {
 #[cfg(test)]
 #[path = "path_selection_tests.rs"]
 mod path_selection_tests;
+
+#[cfg(test)]
+#[path = "pen_cursor_tests.rs"]
+mod pen_cursor_tests;
 
 #[cfg(test)]
 #[path = "vector_paint_tests.rs"]
