@@ -2576,6 +2576,16 @@ cameraData	Lens	Objektiv
 	Search settings…	Hledat nastavení…
 	No matching settings	Žádná odpovídající nastavení
 	Loading fonts…	Načítání písem…
+	Edit Plane	Upravit rovinu
+	Create Plane	Vytvořit rovinu
+	Grid Size:	Velikost mřížky:
+	Vanishing Point: click four corners to create a plane	Úběžník: klepnutím na čtyři rohy vytvoříte rovinu
+	Vanishing Point is not active	Úběžník není aktivní
+	Apply Vanishing Point ({key})	Použít úběžník ({key})
+	Fix the red plane first: its corners must form a convex quad	Nejprve opravte červenou rovinu: její rohy musí tvořit konvexní čtyřúhelník
+	Alt-click a plane to set the clone source	Klepnutím s Alt na rovinu nastavte zdroj klonování
+	Too many clone strokes: apply Vanishing Point first	Příliš mnoho tahů klonování: nejprve použijte Úběžník
+	Stamp	Razítko
 # Select and Mask view modes (#1754)
 	Onion Skin	Cibulová slupka
 	Marching Ants	Pochodující mravenci
