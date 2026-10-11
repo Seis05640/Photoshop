@@ -3596,3 +3596,8 @@ cameraData	Lens	Obiektyw
 	From:	Z:
 	Full Document	Cały dokument
 	Merged Layers	Scalone warstwy
+
+# History panel › History Options… (#2966)
+	History Options…	Opcje historii…
+	Allow Non-Linear History	Zezwalaj na nieliniową historię
+	Make Layer Visibility Changes Undoable	Pozwalaj cofać zmiany widoczności warstw

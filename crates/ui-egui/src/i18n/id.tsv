@@ -2985,3 +2985,8 @@ cameraData	Lens	Lensa
 	From:	Dari:
 	Full Document	Seluruh Dokumen
 	Merged Layers	Layer Gabungan
+
+# History panel › History Options… (#2966)
+	History Options…	Opsi Riwayat…
+	Allow Non-Linear History	Izinkan Riwayat Non-Linier
+	Make Layer Visibility Changes Undoable	Perubahan Visibilitas Layer Dapat Diurungkan

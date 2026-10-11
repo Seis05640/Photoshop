@@ -3776,3 +3776,9 @@ layerLabel	No Color	Sem cor
 	From:	De:
 	Full Document	Documento inteiro
 	Merged Layers	Camadas mescladas
+
+
+# History panel › History Options… (#2966)
+	History Options…	Opções do histórico…
+	Allow Non-Linear History	Permitir histórico não linear
+	Make Layer Visibility Changes Undoable	Permitir desfazer alterações de visibilidade das camadas

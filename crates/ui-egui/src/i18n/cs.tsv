@@ -2590,3 +2590,8 @@ cameraData	Lens	Objektiv
 	Full Document	Celý dokument
 	Merged Layers	Sloučené vrstvy
 	New Snapshot	Nový snímek
+
+# History panel › History Options… (#2966)
+	History Options…	Volby historie…
+	Allow Non-Linear History	Povolit nelineární historii
+	Make Layer Visibility Changes Undoable	Umožnit vrácení změn viditelnosti vrstev

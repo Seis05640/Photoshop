@@ -3745,3 +3745,9 @@ cameraData	Lens	Lens
 	From:	Van:
 	Full Document	Volledig document
 	Merged Layers	Samengevoegde lagen
+
+
+# History panel › History Options… (#2966)
+	History Options…	Geschiedenisopties…
+	Allow Non-Linear History	Niet-lineaire geschiedenis toestaan
+	Make Layer Visibility Changes Undoable	Wijzigingen in laagzichtbaarheid ongedaan kunnen maken

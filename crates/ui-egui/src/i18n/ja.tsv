@@ -3595,3 +3595,8 @@ cameraData	Lens	レンズ
 	From:	作成元:
 	Full Document	ドキュメント全体
 	Merged Layers	結合されたレイヤー
+
+# History panel › History Options… (#2966)
+	History Options…	ヒストリーオプション…
+	Allow Non-Linear History	非線形のヒストリーを許可
+	Make Layer Visibility Changes Undoable	レイヤーの表示/非表示の変更を取り消し可能にする

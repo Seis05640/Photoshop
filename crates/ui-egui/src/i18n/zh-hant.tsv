@@ -2566,3 +2566,9 @@ cameraData	Lens	鏡頭
 	Full Document	完整文件
 	Merged Layers	合併的圖層
 	New Snapshot	新增快照
+
+
+# History panel › History Options… (#2966)
+	History Options…	步驟記錄選項…
+	Allow Non-Linear History	允許非線性步驟記錄
+	Make Layer Visibility Changes Undoable	允許復原圖層可見度變更

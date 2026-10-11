@@ -3682,3 +3682,9 @@ cameraData	Lens	Об'єктив
 	From:	З:
 	Full Document	Увесь документ
 	Merged Layers	Об'єднані шари
+
+
+# History panel › History Options… (#2966)
+	History Options…	Параметри історії…
+	Allow Non-Linear History	Дозволити нелінійну історію
+	Make Layer Visibility Changes Undoable	Дозволити скасування змін видимості шарів

@@ -3680,3 +3680,8 @@ cameraData	Lens	Φακός
 	From:	Από:
 	Full Document	Ολόκληρο έγγραφο
 	Merged Layers	Συγχωνευμένα επίπεδα
+
+# History panel › History Options… (#2966)
+	History Options…	Επιλογές ιστορικού…
+	Allow Non-Linear History	Να επιτρέπεται μη γραμμικό ιστορικό
+	Make Layer Visibility Changes Undoable	Οι αλλαγές ορατότητας επιπέδων να αναιρούνται

@@ -2621,3 +2621,8 @@ cameraData	Lens	Objektiv
 	Full Document	Gesamtes Dokument
 	Merged Layers	Zusammengefügte Ebenen
 	New Snapshot	Neuer Snapshot
+
+# History panel › History Options… (#2966)
+	History Options…	Protokolloptionen…
+	Allow Non-Linear History	Nicht-lineare Protokolle zulassen
+	Make Layer Visibility Changes Undoable	Änderungen der Ebenensichtbarkeit widerrufbar machen

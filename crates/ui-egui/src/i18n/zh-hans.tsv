@@ -2596,3 +2596,9 @@ cameraData	Lens	镜头
 	Full Document	完整文档
 	Merged Layers	合并的图层
 	New Snapshot	新建快照
+
+
+# History panel › History Options… (#2966)
+	History Options…	历史记录选项…
+	Allow Non-Linear History	允许非线性历史记录
+	Make Layer Visibility Changes Undoable	允许撤销图层可见性更改

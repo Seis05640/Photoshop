@@ -2926,3 +2926,9 @@ cameraData	Lens	Объектив
 	From:	Из:
 	Full Document	Весь документ
 	Merged Layers	Объединённые слои
+
+
+# History panel › History Options… (#2966)
+	History Options…	Параметры истории…
+	Allow Non-Linear History	Разрешить нелинейную историю
+	Make Layer Visibility Changes Undoable	Разрешить отмену изменений видимости слоёв

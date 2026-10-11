@@ -2653,3 +2653,8 @@ cameraData	Lens	Obiettivo
 	Full Document	Documento intero
 	Merged Layers	Livelli uniti
 	New Snapshot	Nuova istantanea
+
+# History panel › History Options… (#2966)
+	History Options…	Opzioni cronologia…
+	Allow Non-Linear History	Consenti cronologia non lineare
+	Make Layer Visibility Changes Undoable	Rendi annullabili le modifiche di visibilità dei livelli

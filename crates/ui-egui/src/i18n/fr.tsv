@@ -2998,3 +2998,8 @@ cameraData	Lens	Objectif
 	From:	À partir de :
 	Full Document	Document entier
 	Merged Layers	Calques fusionnés
+
+# History panel › History Options… (#2966)
+	History Options…	Options d'historique…
+	Allow Non-Linear History	Autoriser l'historique non linéaire
+	Make Layer Visibility Changes Undoable	Permettre d'annuler les changements de visibilité des calques
