@@ -3642,3 +3642,6 @@ navigator	Zoom	Zvětšení
 	Fill with {mode}-neutral color (black)	Vyplnit neutrální barvou pro režim {mode} (černá)
 	Fill with {mode}-neutral color (50% gray)	Vyplnit neutrální barvou pro režim {mode} (50% šedá)
 	(No neutral color exists for {mode} mode.)	(Pro režim {mode} neexistuje neutrální barva.)
+
+# Batch / Image Processor
+	Include All Subfolders	Zahrnout všechny podsložky

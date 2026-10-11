@@ -2952,3 +2952,6 @@ cameraData	Lens	Объектив
 	Fill with {mode}-neutral color (black)	Залить нейтральным цветом режима «{mode}» (черный)
 	Fill with {mode}-neutral color (50% gray)	Залить нейтральным цветом режима «{mode}» (50% серого)
 	(No neutral color exists for {mode} mode.)	(Для режима «{mode}» нет нейтрального цвета.)
+
+# Batch / Image Processor
+	Include All Subfolders	Включить все вложенные папки
