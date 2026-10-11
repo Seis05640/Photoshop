@@ -3675,3 +3675,8 @@ cameraData	Lens	Φακός
 # Color Sampler (added with the i18n coverage repair)
 	Click to place · Alt-click or drag off-canvas to remove	Κλικ για τοποθέτηση · Alt-κλικ ή σύρσιμο εκτός καμβά για αφαίρεση
 	{n} of {max} sample points	{n} από {max} σημεία δειγματοληψίας
+
+# History ▸ New Snapshot (#2966)
+	From:	Από:
+	Full Document	Ολόκληρο έγγραφο
+	Merged Layers	Συγχωνευμένα επίπεδα
