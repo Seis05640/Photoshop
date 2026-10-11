@@ -3291,6 +3291,7 @@ cameraRaw	Yellow	Κίτρινο
 	Click a segment to add an anchor point · {alt}-click an anchor to delete it	Κάντε κλικ σε ένα τμήμα για να προσθέσετε σημείο αγκύρωσης · {alt}-κλικ σε σημείο αγκύρωσης για διαγραφή
 	Click an anchor point to delete it · {alt}-click a segment to add one	Κάντε κλικ σε ένα σημείο αγκύρωσης για να το διαγράψετε · {alt}-κλικ σε τμήμα για προσθήκη
 	Pen Tool	Πένα (Pen Tool)
+	Auto Add/Delete	Αυτόματη προσθήκη/διαγραφή
 	Convert Point Tool	Μετατροπή σημείου (Convert Point Tool)
 	Polygon Tool	Πολύγωνο (Polygon Tool)
 	Polygonal Lasso Tool	Πολυγωνικό λάσο (Polygonal Lasso Tool)
@@ -3679,4 +3680,3 @@ cameraData	Lens	Φακός
 # Color Sampler (added with the i18n coverage repair)
 	Click to place · Alt-click or drag off-canvas to remove	Κλικ για τοποθέτηση · Alt-κλικ ή σύρσιμο εκτός καμβά για αφαίρεση
 	{n} of {max} sample points	{n} από {max} σημεία δειγματοληψίας
-	Auto Add/Delete	Αυτόματη προσθήκη/διαγραφή

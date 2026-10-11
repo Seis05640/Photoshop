@@ -1686,6 +1686,7 @@
 	Pen Pressure	Pression du stylet
 	Pen Tilt	Inclinaison du stylet
 	Pen Tool	Outil Plume
+	Auto Add/Delete	Ajout/suppression auto
 	Convert Point Tool	Outil Conversion de point
 	Photo	Photo
 	PhotoCraft website	Site web de PhotoCraft
@@ -2998,4 +2999,3 @@ cameraData	Lens	Objectif
 	Click to place · Alt-click or drag off-canvas to remove	Cliquez pour placer · Alt-clic ou glisser hors du canevas pour supprimer
 	No document open	Aucun document ouvert
 	{n} of {max} sample points	{n} sur {max} points d'échantillonnage
-	Auto Add/Delete	Ajout/suppression auto

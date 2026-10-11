@@ -1,5 +1,4 @@
 # German (de) catalog. Columns, separated by a TAB:  context <TAB> source <TAB> translation
-	Auto Add/Delete	Automatisch hinzufügen/löschen
 #
 #   context  empty                a plain UI string; `source` is the English text in the code
 #            @id                  a command id (e.g. file.saveAs): wins over the English text for
@@ -1701,6 +1700,7 @@
 	Pen Pressure	Stiftdruck
 	Pen Tilt	Stiftneigung
 	Pen Tool	Stift-Werkzeug
+	Auto Add/Delete	Automatisch hinzufügen/löschen
 	Convert Point Tool	Punkt-umwandeln-Werkzeug
 	Photo	Foto
 	PhotoCraft website	PhotoCraft-Website

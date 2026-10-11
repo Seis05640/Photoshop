@@ -1709,6 +1709,7 @@
 	Pen Pressure	Presión de la pluma
 	Pen Tilt	Inclinación de la pluma
 	Pen Tool	Herramienta Pluma
+	Auto Add/Delete	Añadir/eliminar automáticamente
 	Convert Point Tool	Herramienta Convertir punto
 	Photo	Fotografía
 	PhotoCraft website	Sitio web de PhotoCraft
@@ -2661,4 +2662,3 @@ cameraData	Lens	Objetivo
 	Click to place · Alt-click or drag off-canvas to remove	Clic para colocar · Alt-clic o arrastrar fuera del lienzo para quitar
 	No document open	Ningún documento abierto
 	{n} of {max} sample points	{n} de {max} puntos de muestreo
-	Auto Add/Delete	Añadir/eliminar automáticamente

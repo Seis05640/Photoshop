@@ -1683,6 +1683,7 @@
 	Pen Pressure	Pressão da caneta
 	Pen Tilt	Inclinação da caneta
 	Pen Tool	Ferramenta Caneta
+	Auto Add/Delete	Adicionar/excluir automaticamente
 	Convert Point Tool	Ferramenta Converter ponto
 	Photo	Foto
 	PhotoCraft website	Site do PhotoCraft
@@ -3004,7 +3005,6 @@ cameraData	Lens	Lente
 	Click to place · Alt-click or drag off-canvas to remove	Clique para posicionar · Alt-clique ou arraste para fora da tela para remover
 	No document open	Nenhum documento aberto
 	{n} of {max} sample points	{n} de {max} pontos de amostragem
-	Auto Add/Delete	Adicionar/excluir automaticamente
 layerLabel	No Color	Sem cor
 	Preferences…	Preferências…
 	Actual Pixels	Pixels reais

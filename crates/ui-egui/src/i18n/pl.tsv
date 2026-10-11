@@ -1701,6 +1701,7 @@
 	Pen Pressure	Nacisk pióra
 	Pen Tilt	Nachylenie pióra
 	Pen Tool	Narzędzie Pióro
+	Auto Add/Delete	Automatyczne dodawanie/usuwanie
 	Convert Point Tool	Narzędzie Konwertuj punkt
 	Photo	Zdjęcie
 	PhotoCraft website	Strona internetowa PhotoCraft
@@ -3595,4 +3596,3 @@ cameraData	Lens	Obiektyw
 	Click to place · Alt-click or drag off-canvas to remove	Kliknij, aby umieścić · Alt-kliknij lub przeciągnij poza obszar roboczy, aby usunąć
 	No document open	Brak otwartego dokumentu
 	{n} of {max} sample points	{n} z {max} punktów próbkowania
-	Auto Add/Delete	Automatyczne dodawanie/usuwanie

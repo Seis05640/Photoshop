@@ -1590,6 +1590,7 @@
 	Quick Selection Tool	Быстрое выделение
 	Object Selection Tool	Выделение объектов
 	Pen Tool	Перо
+	Auto Add/Delete	Автодобавление/удаление
 	Convert Point Tool	Преобразование узла
 	Path Selection Tool	Выделение контура
 	Direct Selection Tool	Выделение узла
@@ -2927,4 +2928,3 @@ cameraData	Lens	Объектив
 	Click to place · Alt-click or drag off-canvas to remove	Щёлкните, чтобы разместить · Alt-щелчок или перетаскивание за пределы холста для удаления
 	No document open	Документ не открыт
 	{n} of {max} sample points	{n} из {max} точек замера
-	Auto Add/Delete	Автодобавление/удаление
