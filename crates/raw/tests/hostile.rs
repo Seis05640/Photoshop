@@ -71,16 +71,29 @@ fn samples() -> Vec<Vec<u8>> {
     }
     let bayer = RafSpec { packing: RafPacking::Words14, exposure_bias: Some((-100, 100)), ..RafSpec::new(w, h, cfa.clone(), vec![0, 1, 1, 2]) };
     out.push(bayer.build());
+    // Fujifilm's lossless compression, X-Trans and Bayer.
+    let xt14 = mosaic_cfa(&scene(w, h), w, &XTRANS, 6, 1024, 16383);
+    out.push(
+        RafSpec { packing: RafPacking::Compressed, black: vec![1024; 36], crop: Some([1, 2, 10, 20]), ..RafSpec::new(w, h, xt14, XTRANS.to_vec()) }.build(),
+    );
+    out.push(RafSpec { packing: RafPacking::Compressed, black: vec![64; 4], ..RafSpec::new(w, h, cfa.clone(), vec![0, 1, 1, 2]) }.build());
     out
 }
 
 fn exercise(b: &[u8]) {
     let _ = identify(b);
     let _ = embedded_preview(b);
+    let _ = embedded_previews(b);
     let opts = DevelopOptions { limits: Limits { max_alloc: 64 << 20, ..Limits::default() }, ..Default::default() };
     if let Ok(s) = decode(b, &opts.limits) {
         for m in [Demosaic::Bilinear, Demosaic::Ahd] {
             let _ = develop_sensor(&s, &DevelopOptions { demosaic: m, ..opts.clone() });
+        }
+        // A colour fit against a gradient of the crop's (capped) shape, then a develop with it.
+        let (w, h) = (s.crop.width.min(256), s.crop.height.min(256));
+        let rgb: Vec<u8> = (0..w * h * 3).map(|i| (i * 7 % 251) as u8).collect();
+        if let Ok(look) = fit_look(&s, &opts, &Reference { width: w as u32, height: h as u32, rgb: &rgb }) {
+            let _ = develop_sensor(&s, &DevelopOptions { camera_look: Some(look), ..opts.clone() });
         }
     }
 }

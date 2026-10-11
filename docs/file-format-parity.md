@@ -1,6 +1,6 @@
 # File-format parity
 
-> **Last reviewed:** 2026-10-10 · **Last updated:** 2026-10-10 · **Change:** major (first version: every Photoshop 2026 format from its bundle against our readers and writers; Affinity notes moved here from `roadmap.md`) · **Target:** Adobe Photoshop 2026
+> **Last reviewed:** 2026-10-10 · **Last updated:** 2026-10-11 · **Change:** minor (multi-camera RAW audit, Nikon brightness/crops, CR3 preview, 100MP development) · **Target:** Adobe Photoshop 2026
 
 Every format Photoshop 2026 (27.11.0) reads or writes, with PhotoCraft's support, fidelity and
 tests. Photoshop's list comes from its `Info.plist` `CFBundleDocumentTypes`, the PiPL read/write
@@ -64,15 +64,22 @@ supports many more, including CR3).
 |---|---|---|
 | DNG (incl. LJPEG and JPEG XL tiles) | yes; lossy DNG no | FILE-215-11 |
 | Canon CR2 | yes | |
-| Canon CR3 | detected, unsupported | `crates/raw/src/lib.rs:219` |
-| Nikon NEF/NRW (lossless, lossy) | yes; "lossy after split" no | #50 |
+| Canon CR3 | camera JPEG preview with explicit 8-bit fallback; CRX sensor unsupported | [audit](camera-raw-audit.md), `crates/raw/src/cr3.rs` |
+| Nikon NEF/NRW (lossless, lossy) | yes; modern lossy curves, packed modes 6/10 and recorded CropArea; HE/HE* and "lossy after split" no | #50; D5100 image area measured on three 14-bit lossy NEFs; [validation](nikon-nef-development.md) |
 | Sony ARW/SR2/SRF (incl. compressed) | yes | |
-| Panasonic RW2, Pentax PEF | yes | |
+| Panasonic RW2, Pentax PEF | partial: older RW2 sensor layouts; compressed PEF and modern RW2 use camera previews | [audit](camera-raw-audit.md) |
 | Olympus ORF | uncompressed only | |
-| Fujifilm RAF (Bayer and X-Trans) | uncompressed only; no Fuji colour calibration | |
+| Fujifilm RAF (Bayer and X-Trans) | uncompressed and lossless compressed (#2371); default 100MP development; lossy preview-only; appearance fit, no measured Fuji color profile | [audit](camera-raw-audit.md) |
 | Others (CRW, 3FR, IIQ, X3F, SRW, MRW, ERF…) | embedded preview only | |
 | .xmp sidecars, highlight modes, raw preferences | missing | FILE-215-11 |
 | Camera Raw as a PSD smart filter | partial | 2026-10-07: WB, Light/Presence, curves, HSL, grading, detail, grain, vignette mapped (FILE-215-12) |
+
+2026-10-11: on #2135's embedded-JPEG rendering work, open-time Camera Raw tuning
+preserves the fitted rendering while changing Exposure, Temperature and Tint. Default
+tuned import matches normal import exactly; output remains full-resolution 16-bit ProPhoto.
+The broader [camera audit](camera-raw-audit.md) records supported modes and remaining gaps.
+This improves appearance when a usable preview is present, without adding a measured
+D5100 colour profile. Counts and the G14 estimate are unchanged.
 
 ## Formats Photoshop doesn't have (ours only)
 
@@ -133,4 +140,6 @@ remaining gaps in #1606 stay tracked with per-sample corpus ceilings.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-10-11 | minor | Multi-camera RAW audit; Nikon lossy brightness, packed modes and metadata crops; CR3 camera preview; bounded 100MP development |
+| 2026-10-11 | minor | D5100 image area and fitted-look preservation in Camera Raw tuning |
 | 2026-10-10 | major | First version: Photoshop 2026 27.11.0's formats from its bundle, against our codecs; Affinity notes moved from `roadmap.md` |

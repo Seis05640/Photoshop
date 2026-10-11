@@ -144,6 +144,92 @@ fn developing_produces_the_crop_in_16bit_rgb() {
     }
 }
 
+/// Fujifilm's lossless compression, X-Trans (X-T30) and Bayer (GFX 50S): the sensor data must
+/// come out bit-exact. The sums and FNV-1a hashes were measured when the files were pinned, with
+/// a decoder that consumed every block of these files to its padding.
+#[test]
+fn fujifilm_compressed_raf_decodes_bit_exactly() {
+    struct Want {
+        file: &'static str,
+        model: &'static str,
+        size: (usize, usize),
+        cfa: (usize, usize),
+        black: f32,
+        sum: u64,
+        fnv1a: u64,
+    }
+    let wants = [
+        Want { file: "DSCF0066.RAF", model: "X-T30", size: (6384, 4182), cfa: (6, 6), black: 1022.0, sum: 95_851_814_762, fnv1a: 0x693f_7546_7932_b1c0 },
+        Want {
+            file: "20170525_0037TEST.RAF",
+            model: "GFX 50S",
+            size: (9216, 6210),
+            cfa: (2, 2),
+            black: 65.0,
+            sum: 79_545_293_042,
+            fnv1a: 0xb3e5_70a6_c884_55f5,
+        },
+    ];
+    for w in &wants {
+        let bytes = std::fs::read(pixls(w.file)).unwrap_or_else(|e| panic!("{}: {e}", w.file));
+        let s = photocraft_raw::decode(&bytes, &Limits::default()).unwrap_or_else(|e| panic!("{}: {e}", w.file));
+        assert_eq!(s.format, RawFormat::Raf, "{}", w.file);
+        assert_eq!(s.model.as_deref(), Some(w.model), "{}", w.file);
+        assert_eq!((s.width, s.height), w.size, "{}", w.file);
+        let cfa = s.cfa.as_ref().unwrap_or_else(|| panic!("{}: no CFA", w.file));
+        assert_eq!((cfa.width, cfa.height), w.cfa, "{}", w.file);
+        assert_eq!(s.black.values, vec![w.black], "{}", w.file);
+        // The clip level is estimated from the data; both files reach the 14-bit ceiling.
+        assert!(s.white.iter().all(|&v| (16000.0..=16383.0).contains(&v)), "{}: white {:?}", w.file, s.white);
+        let sum: u64 = s.data.iter().map(|&v| u64::from(v)).sum();
+        let mut h: u64 = 0xcbf2_9ce4_8422_2325;
+        for &v in &s.data {
+            for b in v.to_le_bytes() {
+                h ^= u64::from(b);
+                h = h.wrapping_mul(0x0100_0000_01b3);
+            }
+        }
+        assert_eq!((sum, h), (w.sum, w.fnv1a), "{}: the decoded sensor data changed", w.file);
+        let d = photocraft_raw::develop_sensor(&s, &photocraft_raw::DevelopOptions::default()).unwrap_or_else(|e| panic!("{}: {e}", w.file));
+        assert_eq!((d.width as usize, d.height as usize), (s.crop.width, s.crop.height), "{}", w.file);
+    }
+}
+
+/// These paired exposures used to decode below their recorded black levels because the
+/// version 0x44 0x40 linearization curve was interpolated across the sensor's full bit range.
+#[test]
+fn modern_lossy_nef_preserves_brightness_at_both_depths() {
+    for (file, black, white) in [("DSC_0751.NEF", 1008.0, 16383.0), ("DSC_0754.NEF", 252.0, 4095.0)] {
+        let bytes = std::fs::read(pixls(file)).unwrap();
+        let s = photocraft_raw::decode(&bytes, &Limits::default()).unwrap();
+        assert_eq!(s.model.as_deref(), Some("NIKON Z 6"));
+        assert_eq!((s.width, s.height), (6064, 4040));
+        assert_eq!(s.black.values, vec![black; 4]);
+        assert!(s.white.iter().all(|v| (*v - white).abs() < 100.0));
+        // The same scene spans deep shadows and bright highlights at either sensor depth.
+        let max = s.data.iter().copied().max().unwrap();
+        assert!(f32::from(max) > white * 0.9, "{file}: maximum {max}");
+        let mean = s.data.iter().map(|v| f64::from(*v)).sum::<f64>() / s.data.len() as f64;
+        assert!(mean > f64::from(black) * 1.5, "{file}: mean {mean}");
+        let d = photocraft_raw::develop_sensor(&s, &photocraft_raw::DevelopOptions::default()).unwrap();
+        assert_eq!((d.width, d.height), (6048, 4024));
+        assert!(d.rgb.iter().copied().max().unwrap() > 32768, "{file}: black development");
+    }
+}
+
+#[test]
+fn packed_nef_opens_full_sensor_and_metadata_crop_at_both_depths() {
+    for (file, first) in [("DSC_0750.NEF", [3539, 3761, 3640, 3904]), ("DSC_0753.NEF", [866, 932, 881, 948])] {
+        let bytes = std::fs::read(pixls(file)).unwrap();
+        let s = photocraft_raw::decode(&bytes, &Limits::default()).unwrap();
+        assert_eq!((s.width, s.height), (6064, 4040));
+        assert_eq!(&s.data[..4], &first);
+        assert_eq!(s.crop, photocraft_raw::Rect::new(8, 8, 6048, 4024));
+        let d = photocraft_raw::develop_sensor(&s, &Default::default()).unwrap();
+        assert_eq!((d.width, d.height), (6048, 4024));
+    }
+}
+
 /// The E-5 file is the documented known-unsupported case: later Olympus bodies store packed
 /// (compressed) sensor data. The error must say so, never panic, and the file still previews.
 #[test]

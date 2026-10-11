@@ -5,6 +5,7 @@
 use crate::color::{self, Mat3};
 use crate::demosaic::{Demosaic, PAD, Padded, Pattern, demosaic, demosaic_cfa};
 use crate::error::{RawError, Result};
+use crate::look::{CameraLook, ToneCurve};
 use crate::sensor::Sensor;
 use crate::{Limits, RawFormat, par};
 
@@ -30,11 +31,21 @@ pub struct DevelopOptions {
     /// Apply the file's orientation (rotate / flip the pixels).
     pub orient: bool,
     pub limits: Limits,
+    /// A colour rendering fitted to the camera's own JPEG ([`crate::fit_look`]). When set it
+    /// replaces the file's colour calibration (or the neutral fallback) and adds its tone curve.
+    pub camera_look: Option<CameraLook>,
 }
 
 impl Default for DevelopOptions {
     fn default() -> Self {
-        DevelopOptions { demosaic: Demosaic::default(), white_balance: WhiteBalance::default(), exposure: 0.0, orient: true, limits: Limits::default() }
+        DevelopOptions {
+            demosaic: Demosaic::default(),
+            white_balance: WhiteBalance::default(),
+            exposure: 0.0,
+            orient: true,
+            limits: Limits::default(),
+            camera_look: None,
+        }
     }
 }
 
@@ -70,14 +81,19 @@ pub struct Developed {
 }
 
 /// Linearization + black/white scaling for one sample (pre white balance), 0..1.
-struct Scale<'a> {
+pub(crate) struct Scale<'a> {
     s: &'a Sensor,
     lin: Option<&'a [u16]>,
 }
 
-impl Scale<'_> {
+impl<'a> Scale<'a> {
+    /// The scale for `s` (lazily: `lin` is the sensor's linearization table).
+    pub(crate) fn new(s: &'a Sensor) -> Self {
+        Scale { s, lin: s.linearization.as_deref() }
+    }
+
     #[inline]
-    fn value(&self, x: usize, y: usize, sample: usize) -> f32 {
+    pub(crate) fn value(&self, x: usize, y: usize, sample: usize) -> f32 {
         let s = self.s;
         let raw = s.data[(y * s.width + x) * s.samples + sample];
         let v = match self.lin {
@@ -140,22 +156,9 @@ fn normalize(n: [f64; 3]) -> Option<[f64; 3]> {
     (m > 0.0 && n.iter().all(|v| v.is_finite() && *v > 1e-4)).then(|| n.map(|v| v / m))
 }
 
-/// Develops sensor data.
-pub fn develop_sensor(s: &Sensor, opts: &DevelopOptions) -> Result<Developed> {
-    let c = s.crop;
-    if c.is_empty() || c.x + c.width > s.width || c.y + c.height > s.height || s.data.len() < s.width * s.height * s.samples {
-        return Err(RawError::malformed("crop lies outside the sensor data"));
-    }
-    if s.samples != 1 && s.samples != 3 {
-        return Err(RawError::unsupported(format!("{} samples per pixel", s.samples)));
-    }
-    // Working buffers: one f32 plane plus f32 RGB plus u16 RGB per pixel, and
-    // a green plane for non-Bayer patterns.
-    let bayer = s.cfa.as_ref().is_none_or(|cfa| cfa.is_bayer());
-    opts.limits.check(c.width as u64, c.height as u64, if bayer { 4 + 12 + 6 } else { 4 + 4 + 12 + 6 })?;
-    let mut warnings = s.warnings.clone();
-    let sc = Scale { s, lin: s.linearization.as_deref() };
-
+/// The camera-space neutral (max component 1) for `opts.white_balance`, as
+/// [`develop_sensor`] uses it (the same white balance [`crate::fit_look`] balances with).
+pub(crate) fn resolve_neutral(s: &Sensor, opts: &DevelopOptions, sc: &Scale, warnings: &mut Vec<String>) -> Result<[f64; 3]> {
     // White balance: camera-space neutral, max component 1.
     let as_shot = s
         .color
@@ -163,25 +166,70 @@ pub fn develop_sensor(s: &Sensor, opts: &DevelopOptions) -> Result<Developed> {
         .or_else(|| s.color.as_shot_white_xy.and_then(|xy| s.color.xy_to_neutral(xy)))
         .or_else(|| s.camera_wb.map(|m| m.map(|v| 1.0 / v)))
         .and_then(normalize);
-    let neutral = match opts.white_balance {
+    Ok(match opts.white_balance {
         WhiteBalance::AsShot => match as_shot {
             Some(n) => n,
             None => {
                 warnings.push("no as-shot white balance in the file; estimated automatically (grey world)".into());
-                grey_world(s, &sc)
+                grey_world(s, sc)
             }
         },
-        WhiteBalance::Auto => grey_world(s, &sc),
+        WhiteBalance::Auto => grey_world(s, sc),
         WhiteBalance::Multipliers(m) => {
             normalize(m.map(|v| 1.0 / v)).ok_or_else(|| RawError::Malformed("white-balance multipliers must be positive".into()))?
         }
-    };
+    })
+}
+
+/// Develops sensor data.
+pub fn develop_sensor(s: &Sensor, opts: &DevelopOptions) -> Result<Developed> {
+    let c = s.crop;
+    let samples = s.width.checked_mul(s.height).and_then(|n| n.checked_mul(s.samples));
+    if c.is_empty()
+        || c.x.checked_add(c.width).is_none_or(|x| x > s.width)
+        || c.y.checked_add(c.height).is_none_or(|y| y > s.height)
+        || samples.is_none_or(|n| s.data.len() < n)
+    {
+        return Err(RawError::malformed("crop lies outside the sensor data"));
+    }
+    if s.samples != 1 && s.samples != 3 {
+        return Err(RawError::unsupported(format!("{} samples per pixel", s.samples)));
+    }
+    if let Some(cfa) = &s.cfa {
+        if s.samples != 1
+            || cfa.width == 0
+            || cfa.height == 0
+            || cfa.width > 16
+            || cfa.height > 16
+            || cfa.colors.len() != cfa.width * cfa.height
+            || cfa.colors.iter().any(|c| *c > 2)
+        {
+            return Err(RawError::malformed("invalid sensor CFA pattern"));
+        }
+    } else if s.samples != 3 {
+        return Err(RawError::malformed("linear RGB sensor must have three samples per pixel"));
+    }
+    let bayer = s.cfa.as_ref().is_none_or(|cfa| cfa.is_bayer());
+    let ahd_jobs = working_memory(c.width, c.height, s.cfa.is_some(), bayer, opts, par::workers())?;
+    let mut warnings = s.warnings.clone();
+    let sc = Scale::new(s);
+
+    let neutral = resolve_neutral(s, opts, &sc, &mut warnings)?;
     let mult = neutral.map(|v| (1.0 / v) as f32);
 
-    // Balanced camera → XYZ D50.
-    let to_xyz: Mat3 = match s.color.balanced_to_xyz_d50(neutral) {
-        Some(m) => m,
-        None => {
+    // Balanced camera → XYZ D50: a look fitted to the camera's JPEG, the file's calibration,
+    // or the neutral fallback.
+    let look = opts.camera_look.as_ref().filter(|l| l.is_usable());
+    if opts.camera_look.is_some() && look.is_none() {
+        warnings.push("the supplied camera look is not usable (non-finite or singular); ignored".into());
+    }
+    let to_xyz: Mat3 = match (look, s.color.balanced_to_xyz_d50(neutral)) {
+        (Some(l), _) => {
+            warnings.push(l.note());
+            l.to_xyz
+        }
+        (None, Some(m)) => m,
+        (None, None) => {
             if s.format != RawFormat::Dng {
                 warnings.push("no colour calibration for this camera; camera colours are treated as sRGB primaries".into());
             }
@@ -257,7 +305,7 @@ pub fn develop_sensor(s: &Sensor, opts: &DevelopOptions) -> Result<Developed> {
             if bayer {
                 let p = cfa.phase(c.x, c.y);
                 pattern = Some(names(&p));
-                rgb = demosaic(&plane, p, opts.demosaic, &to_xyz);
+                rgb = demosaic(&plane, p, opts.demosaic, &to_xyz, ahd_jobs);
             } else {
                 let pat = Pattern::of(cfa, c.x, c.y);
                 pattern = Some(pat.colors.chunks(pat.w.max(1)).map(names).collect::<Vec<_>>().join("/"));
@@ -288,9 +336,12 @@ pub fn develop_sensor(s: &Sensor, opts: &DevelopOptions) -> Result<Developed> {
         }
     }
 
-    // Camera → ProPhoto, exposure, the profile's tone curve, gamma 1.8, 16 bits.
+    // Camera → ProPhoto, exposure, the look's tone curve, gamma 1.8, 16 bits.
     let mut out = vec![0u16; w * h * 3];
-    let lut = GammaLut::with_curve(&s.tone_curve);
+    let lut = match look {
+        Some(l) => GammaLut::with_tone(l.tone.as_ref()),
+        None => GammaLut::with_curve(&s.tone_curve),
+    };
     par::chunks_mut(&mut out, band * w * 3, |b, chunk| {
         let start = b * band * w * 3;
         let src = &rgb[start..start + chunk.len()];
@@ -322,6 +373,36 @@ pub fn develop_sensor(s: &Sensor, opts: &DevelopOptions) -> Result<Developed> {
         },
         warnings,
     })
+}
+
+/// Checks the peak of the two development phases. The CFA and non-Bayer green
+/// planes are freed before the u16 output is allocated; AHD scratch is bounded
+/// by reducing simultaneous bands when needed. Sensor storage belongs to the
+/// caller and is checked separately by the decoder.
+fn working_memory(w: usize, h: usize, cfa: bool, bayer: bool, opts: &DevelopOptions, workers: usize) -> Result<usize> {
+    let limits = &opts.limits;
+    limits.check(w as u64, h as u64, 18)?;
+    let pixels = (w as u64).saturating_mul(h as u64);
+    let output = pixels.saturating_mul(18).saturating_add((GAMMA_STEPS as u64 + 2) * 4);
+    let mut peak = output;
+    let mut jobs = workers.max(1);
+    if cfa {
+        let plane = (w as u64).saturating_add(2 * PAD as u64).saturating_mul((h as u64).saturating_add(2 * PAD as u64)).saturating_mul(4);
+        let mut mosaic = pixels.saturating_mul(if bayer { 12 } else { 16 }).saturating_add(plane);
+        if bayer && opts.demosaic == Demosaic::Ahd {
+            mosaic = mosaic.saturating_add(crate::demosaic::AHD_TABLE_BYTES);
+            let scratch = crate::demosaic::ahd_scratch(w as u64, h as u64);
+            let available = limits.max_alloc.saturating_sub(mosaic) / scratch.max(1);
+            jobs = jobs.min(crate::demosaic::ahd_bands(h)).min(usize::try_from(available).unwrap_or(usize::MAX));
+            // At least one band must fit, even when no parallelism is available.
+            mosaic = mosaic.saturating_add(scratch.saturating_mul(jobs.max(1) as u64));
+        }
+        peak = peak.max(mosaic);
+    }
+    if peak > limits.max_alloc || usize::try_from(peak).is_err() {
+        return Err(RawError::LimitExceeded(format!("{peak} bytes of RAW working memory exceed {}", limits.max_alloc)));
+    }
+    Ok(jobs.max(1))
 }
 
 /// Gain-map factors (DNG OpcodeList2 GainMap) for data row `y`, columns
@@ -377,6 +458,20 @@ impl GammaLut {
         GammaLut { table }
     }
 
+    /// The gamma-1.8 encoding after a fitted [`ToneCurve`] (`None`: none, plain gamma 1.8).
+    fn with_tone(tone: Option<&ToneCurve>) -> Self {
+        let table = (0..=GAMMA_STEPS + 1)
+            .map(|i| {
+                let s = (i as f64 / GAMMA_STEPS as f64).min(1.0);
+                match tone {
+                    Some(t) => (t.eval(s * s).powf(1.0 / 1.8) * 65535.0) as f32,
+                    None => (s as f32).powf(2.0 / 1.8) * 65535.0,
+                }
+            })
+            .collect();
+        GammaLut { table }
+    }
+
     #[inline]
     fn encode(&self, v: f32) -> u16 {
         let v = if v.is_nan() { 0.0 } else { v.clamp(0.0, 1.0) };
@@ -402,6 +497,22 @@ fn tone(curve: &[[f32; 2]], v: f32) -> f32 {
     let ([x0, y0], [x1, y1]) = (curve[i - 1], curve[i]);
     let f = (v.log2() - x0.log2()) / (x1.log2() - x0.log2());
     y0 + (y1 - y0) * f
+}
+
+/// The source position in a `w × h` image of output pixel (`x2`, `y2`) after
+/// applying TIFF orientation `o` (output in range when the input is).
+pub(crate) fn source_xy(o: u16, w: usize, h: usize, x2: usize, y2: usize) -> (usize, usize) {
+    let (wl, hl) = (w.saturating_sub(1), h.saturating_sub(1));
+    match o {
+        2 => (wl.saturating_sub(x2), y2),
+        3 => (wl.saturating_sub(x2), hl.saturating_sub(y2)),
+        4 => (x2, hl.saturating_sub(y2)),
+        5 => (y2, x2),
+        6 => (y2, hl.saturating_sub(x2)),
+        7 => (wl.saturating_sub(y2), hl.saturating_sub(x2)),
+        8 => (wl.saturating_sub(y2), x2),
+        _ => (x2, y2),
+    }
 }
 
 /// Applies a TIFF orientation (1–8) to interleaved RGB.
@@ -437,6 +548,34 @@ pub(crate) fn orient(src: Vec<u16>, w: usize, h: usize, o: u16) -> (Vec<u16>, us
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn hundred_megapixel_bayer_fits_without_raising_default_limits() {
+        let mut opts = DevelopOptions::default();
+        for method in [Demosaic::Bilinear, Demosaic::Mhc, Demosaic::Ahd] {
+            opts.demosaic = method;
+            for workers in [1, 10, 32, 128] {
+                let jobs = working_memory(11648, 8736, true, true, &opts, workers).unwrap();
+                assert!(jobs <= workers);
+                if method == Demosaic::Ahd && workers >= 32 {
+                    assert!(jobs < workers);
+                }
+            }
+        }
+        opts.limits.max_alloc = 1 << 30;
+        assert!(working_memory(11648, 8736, true, true, &opts, 1).is_err());
+    }
+
+    #[test]
+    fn working_memory_accounts_for_padding_and_at_least_one_ahd_band() {
+        let mut opts = DevelopOptions { demosaic: Demosaic::Ahd, ..Default::default() };
+        opts.limits.max_alloc = 100 * 100 * 22;
+        assert!(working_memory(100, 100, true, true, &opts, 1).is_err());
+        opts.demosaic = Demosaic::Mhc;
+        assert!(working_memory(100, 100, true, true, &opts, 1).is_ok());
+        opts.limits.max_alloc = 100 * 100 * 18;
+        assert!(working_memory(100, 100, false, true, &opts, 1).is_err());
+    }
 
     #[test]
     fn gamma_table_matches_powf() {
