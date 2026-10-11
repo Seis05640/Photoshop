@@ -1,6 +1,6 @@
 # Where PhotoCraft falls short of Photoshop
 
-> **Last reviewed:** 2026-10-10 · **Last updated:** 2026-10-11 · **Change:** minor (D5100 crop and Camera Raw tuning validation) · **Target:** Adobe Photoshop 2026
+> **Last reviewed:** 2026-10-10 · **Last updated:** 2026-10-11 · **Change:** minor (multi-camera RAW audit, Nikon brightness/crops, CR3 preview, 100MP development) · **Target:** Adobe Photoshop 2026
 
 Every known shortfall against Photoshop 2026 (27.11.0), one entry each, ranked by user impact
 on the way to beta. This is the work list agents pick from: take the highest-ranked entry that
@@ -82,6 +82,7 @@ what an agent can't finish alone.
   for distort/perspective on type (TYPE-218-9), text free transform (#2630).
 - **Evidence:** scorecard Type: 0 done, 3 partial, 6 missing. The Type tool froze the app for
   60 s on one macOS machine (#2518).
+- **Progress (2026-10-11):** lossless RAF dependency #2371 plus bounded default 100MP development; modern Nikon lossy brightness, packed 12/14-bit modes and recorded CropArea; CR3 camera JPEG fallback. Preview fitting is approximate; G14 remains open.
 - **Estimate:** 120–200 h.
 
 ### G11. Actions and scripting
@@ -93,10 +94,10 @@ what an agent can't finish alone.
   (AGENTS.md forbids JS in the app).
 
 ### G14. Camera Raw depth
-- **Missing:** CR3 (detected, unsupported), compressed RAF, lossy DNG (FILE-215-11), .xmp
+- **Missing:** CR3 sensor decoding (camera JPEG fallback available), lossy RAF, modern/vendor-compressed RW2, compressed ORF/PEF, Nikon HE/HE*, Sony reduced-size M/S lossless, lossy DNG (FILE-215-11), .xmp
   sidecars, masking and calibration in the Camera Raw dialog, per-camera colour for non-DNG
   cameras, lens profiles.
-- **Evidence:** `crates/raw/src/lib.rs:219` (CR3), scorecard FILE-215-11/12, #50.
+- **Evidence:** [multi-camera audit](camera-raw-audit.md), `crates/raw/src/cr3.rs` (CR3 preview), scorecard FILE-215-11/12, #50.
 - **Progress (2026-10-11):** on the embedded-JPEG rendering work in #2135, Camera Raw
   tuning retains the fitted look and applies user gains afterwards. Three D5100 NEFs
   establish a guarded 4928 × 3264 image area. This is an estimated rendering, not a
@@ -215,6 +216,7 @@ what an agent can't finish alone.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-10-11 | minor | Multi-camera RAW audit; Nikon lossy brightness, packed modes and metadata crops; CR3 camera preview; bounded 100MP development |
 | 2026-10-11 | minor | D5100 image area and Camera Raw tuning validation; G14 remains open |
 | 2026-10-10 | minor | Checked against the alpha gate (no alpha blockers); #2374 marked closed |
 | 2026-10-10 | major | First version, from the full re-measure against Photoshop 2026 27.11.0 and the open issues |
