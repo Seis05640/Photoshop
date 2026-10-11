@@ -56,9 +56,10 @@ pub fn save(
         .or_else(|| path.extension().map(|e| e.to_string_lossy().to_ascii_lowercase()))
         .ok_or_else(|| AutomationError::BadRequest(format!("cannot tell the format of `{}`; pass a format", path.display())))?;
     if ext == photocraft_format::EXTENSION {
+        let named = photocraft_io::named_for_file(doc, &path.to_string_lossy());
         let mut local = PcraftWriter::new();
         let w = writer.unwrap_or(&mut local);
-        w.save_path(doc, path, &previews(doc))?;
+        w.save_path(&named, path, &previews(doc))?;
         return Ok(Vec::new());
     }
     let r = photocraft_io::export(doc, &ext, opts)?;
@@ -75,13 +76,13 @@ pub fn save_bytes(doc: &Document, name: &str, format_override: Option<&str>, opt
         .or_else(|| Path::new(name).extension().map(|extension| extension.to_string_lossy().to_ascii_lowercase()))
         .ok_or_else(|| AutomationError::BadRequest(format!("cannot tell the format of `{name}`; pass a format")))?;
     if ext == photocraft_format::EXTENSION {
-        return Ok((photocraft_format::save_to_bytes(doc, &previews(doc))?, Vec::new()));
+        return Ok((photocraft_format::save_to_bytes(&photocraft_io::named_for_file(doc, name), &previews(doc))?, Vec::new()));
     }
     let result = photocraft_io::export(doc, &ext, opts)?;
     Ok((result.bytes, result.warnings))
 }
 
-/// Flattened document as PNG, scaled to fit `max_side` (0 = full size).
+/// Flattened document as PNG, scal to fit `max_side` (0 = full size).
 pub fn render_png(doc: &Document, max_side: u32) -> Result<Vec<u8>, AutomationError> {
     let side = if max_side == 0 { doc.size.width.max(doc.size.height) } else { max_side };
     let img = photocraft_compose::thumbnail(doc, side.max(1));
