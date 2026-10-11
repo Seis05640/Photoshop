@@ -2537,6 +2537,9 @@ fn layer_row(
     // Photoshop's default (medium) thumbnails: 32 pt rows.
     let row_h = if t.pro { 32.0 } else { 46.0 };
     let (rect, resp) = ui.allocate_exact_size(vec2(ui.available_width(), row_h), Sense::click_and_drag());
+    if resp.hovered() {
+        crate::layer_hover::row_hovered(app, ctx, l.id);
+    }
     layer_drag_and_drop(app, ctx, ui, l, rect, &resp, actions);
     fx_drop(ctx, ui, l, rect, actions);
     if resp.drag_started() {
