@@ -1,6 +1,6 @@
 # UI parity: tools, handles, modifiers and feel
 
-> **Last reviewed:** 2026-10-10 · **Last updated:** 2026-10-11 · **Change:** minor (Hand-tool flick panning) · **Target:** Adobe Photoshop 2026
+> **Last reviewed:** 2026-10-10 · **Last updated:** 2026-10-11 · **Change:** minor (History snapshots) · **Target:** Adobe Photoshop 2026
 
 How PhotoCraft's direct manipulation compares with Photoshop 2026 (27.11.0): the toolbox, the
 handles and modifier keys of each gesture, nudging, snapping, numeric precision, navigation,
@@ -198,6 +198,7 @@ Paragraph; the rest open as in-app floating windows.
 | Command palette with recents | done | UI-217-7 |
 | Every preference takes effect | partial | 46 of 149 do nothing (scorecard) |
 | UI scale presets | missing | UI-217-9, #2492 |
+| History snapshots: camera button, New Snapshot dialog (⌥-click: Name, From), the first snapshot (the document as opened), snapshot rows (click returns, rename, delete), `history.*Snapshot` commands | partial | `history_cmds.rs`, `snapshot_rows` in `panels.rs`, `snapshot_dialog.rs`; the snapshot History Options and History Brush sources to come (#2966) |
 | Themes: Photoshop's four greys | partial | five themes; #2661 |
 | Document tabs: overflow, context menu, reorder | done | UI-217-6; middle-click close #2570 |
 | Layers panel: wheel steps blend modes, drop on New/Trash | partial | UI-217-14 |
@@ -209,3 +210,5 @@ Paragraph; the rest open as in-app floating windows.
 | 2026-10-10 | major | First version, from a source audit against Photoshop 2026 27.11.0's shortcuts file and the open issues |
 | 2026-10-10 | minor | Fixed Crop live resize snapping feedback and outdated-camera rendering, applied ratios immediately to centred inscribed previews, and removed two-point options-bar overflow; added pointer, rendering, dropdown/Enter, Swap/X and scrolling regressions |
 | 2026-10-11 | minor | Flick panning done: releasing a moving Hand drag (tool, Space or middle button) glides and decays, gated by Enable Flick Panning |
+| 2026-10-11 | minor | History snapshots: the camera button takes one, snapshot rows return to it as a new state, rename and delete it (#2966) |
+| 2026-10-11 | minor | History snapshots: the New Snapshot dialog (⌥-click the camera), and the first snapshot of the document as opened as the panel's top row (#2966) |
