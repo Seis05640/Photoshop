@@ -1,5 +1,9 @@
-//! Canvas cursors must move with the OS pointer, independently of the canvas frame rate.
-//! Windows' stock crosshair inverts grey into grey, so use our black/white bitmap there too.
+//! Canvas cursors must move with the OS pointer, independently of the canvas frame rate: the brush
+//! outline and crosshairs are OS cursor bitmaps on every desktop platform (Windows, macOS, X11 and
+//! Wayland), so they track the hardware pointer instead of trailing it by the app's render,
+//! present and compositor latency. A painted outline lagged the pointer by several refreshes on
+//! Linux and macOS and "jumped to catch up" on slow frames (#1343). Windows' stock crosshair
+//! inverts grey into grey, so the crosshairs are our black/white bitmap there too.
 
 use std::sync::Arc;
 
@@ -15,8 +19,12 @@ pub(crate) enum PenCursor {
     Close,
 }
 
-/// winit's cursor limit. Keep allocations bounded even for hostile brush sizes or zooms.
-const MAX_SIDE: u16 = 2048;
+/// The largest cursor bitmap, in physical pixels; a larger tip paints its outline instead (with a
+/// small OS crosshair at the hotspot). Windows takes winit's limit. Elsewhere, X servers and
+/// hardware cursor planes commonly cap cursors at 256 px and fall back to slow software cursors
+/// (or reject them) past that, so stay within it there (#968 used 128). Either way it keeps
+/// allocations bounded for hostile brush sizes or zooms.
+const MAX_SIDE: u16 = if cfg!(target_os = "windows") { 2048 } else { 255 };
 
 /// What a bitmap cursor shows. `Hand` is the Hand tool's open hand, or its fist while it drags.
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -73,8 +81,7 @@ pub(crate) fn crosshair(painter: &Painter, at: Pos2, length: f32, gap: f32) -> C
 /// The nib stays at the pointer; the new-path or close-path mark moves with the OS cursor too.
 pub(crate) fn pen(painter: &Painter, at: Pos2, state: PenCursor) -> CursorIcon {
     let ctx = painter.ctx();
-    if cfg!(not(target_arch = "wasm32"))
-        && ctx.viewport_id() == egui::ViewportId::ROOT
+    if native(ctx)
         && let Some(image) = cached_image(ctx, Shape::Pen(state), native_scale(ctx))
     {
         ctx.set_cursor_image(Some(image));
@@ -83,8 +90,17 @@ pub(crate) fn pen(painter: &Painter, at: Pos2, state: PenCursor) -> CursorIcon {
     if pen::paint(painter, at, state) { CursorIcon::None } else { CursorIcon::Crosshair }
 }
 
-/// NSCursor sizes images in logical points; other native backends take physical pixels.
-fn native_scale(ctx: &egui::Context) -> f32 {
+/// Can this pass show an OS cursor bitmap? eframe's immediate viewports and its web integration
+/// don't upload cursor images; every desktop root viewport does (winit custom cursors).
+fn native(ctx: &egui::Context) -> bool {
+    cfg!(not(target_arch = "wasm32")) && ctx.viewport_id() == egui::ViewportId::ROOT
+}
+
+/// Bitmap pixels per egui point. winit takes an `NSCursor` image's dimensions as logical points on
+/// macOS, so there the bitmap scales only with the UI zoom (the monitor's density would enlarge it
+/// a second time on Retina displays); Windows, X11 and Wayland take physical pixels. (The macOS
+/// sizing is from @jerrykimo's #968.)
+pub(crate) fn native_scale(ctx: &egui::Context) -> f32 {
     if cfg!(target_os = "macos") { ctx.zoom_factor() } else { ctx.pixels_per_point() }
 }
 
@@ -96,7 +112,7 @@ pub(crate) fn hand(ctx: &egui::Context, closed: bool) -> CursorIcon {
 }
 
 fn hand_with(ctx: &egui::Context, closed: bool, bitmap: bool) -> CursorIcon {
-    if bitmap && let Some(image) = cached_image(ctx, Shape::Hand { closed }, ctx.pixels_per_point()) {
+    if bitmap && let Some(image) = cached_image(ctx, Shape::Hand { closed }, native_scale(ctx)) {
         ctx.set_cursor_image(Some(image));
         return CursorIcon::None;
     }
@@ -105,10 +121,9 @@ fn hand_with(ctx: &egui::Context, closed: bool, bitmap: bool) -> CursorIcon {
 
 fn show(painter: &Painter, at: Pos2, shape: Shape) -> CursorIcon {
     let ctx = painter.ctx();
-    // eframe's immediate viewports and web integration do not upload cursor images. Keep their
-    // existing painter path. Other native platforms retain their existing cursor behaviour.
-    if cfg!(target_os = "windows") && ctx.viewport_id() == egui::ViewportId::ROOT {
-        let scale = ctx.pixels_per_point();
+    // Where cursor images can't be uploaded (immediate viewports, the web), paint the shape.
+    if native(ctx) {
+        let scale = native_scale(ctx);
         if let Some(image) = cached_image(ctx, shape, scale) {
             ctx.set_cursor_image(Some(image));
             return CursorIcon::None;

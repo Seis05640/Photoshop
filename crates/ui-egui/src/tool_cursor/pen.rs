@@ -5,8 +5,6 @@ use std::sync::Arc;
 
 pub(super) const SIZE: f32 = 20.0;
 const NIB: f32 = 2.3 / 24.0;
-// winit's portable native cursor limit is 255; Windows supports our larger cursor budget.
-const MAX_PEN_SIDE: u16 = if cfg!(target_os = "windows") { MAX_SIDE } else { 255 };
 
 #[derive(Clone)]
 struct Texture {
@@ -21,7 +19,7 @@ pub(super) fn rasterize(scale: f32, state: PenCursor) -> Option<CustomCursorImag
     let size = (SIZE * scale).ceil();
     let canvas_size = (30.0 * scale).ceil();
     // Leave a transparent physical pixel around the SVG; validate before decoding or allocating.
-    if !canvas_size.is_finite() || size < 1.0 || canvas_size > f32::from(MAX_PEN_SIDE - 2) {
+    if !canvas_size.is_finite() || size < 1.0 || canvas_size > f32::from(MAX_SIDE - 2) {
         return None;
     }
     let source_side = size as u16;
