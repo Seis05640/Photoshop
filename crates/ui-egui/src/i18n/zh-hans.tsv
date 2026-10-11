@@ -2597,3 +2597,7 @@ cameraData	Lens	镜头
 	Light Red	浅红色
 	Medium Blue	中蓝色
 	Light Gray	浅灰色
+
+# View › Guides › right-click a guide
+	Edit Selected Guides	编辑所选参考线
+	Clear Selected Guides	清除所选参考线

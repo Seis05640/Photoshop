@@ -3596,3 +3596,7 @@ cameraData	Lens	レンズ
 	Light Red	ライトレッド
 	Medium Blue	ミディアムブルー
 	Light Gray	ライトグレー
+
+# View › Guides › right-click a guide
+	Edit Selected Guides	選択したガイドを編集
+	Clear Selected Guides	選択したガイドを消去

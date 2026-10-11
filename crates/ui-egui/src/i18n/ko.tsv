@@ -3165,3 +3165,7 @@ cameraData	Lens	렌즈
 	Light Red	연한 빨강
 	Medium Blue	중간 파랑
 	Light Gray	연한 회색
+
+# View › Guides › right-click a guide
+	Edit Selected Guides	선택한 안내선 편집
+	Clear Selected Guides	선택한 안내선 지우기

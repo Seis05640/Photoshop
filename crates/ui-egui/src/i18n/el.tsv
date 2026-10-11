@@ -3681,3 +3681,7 @@ cameraData	Lens	Φακός
 	Light Red	Ανοιχτό κόκκινο
 	Medium Blue	Μεσαίο μπλε
 	Light Gray	Ανοιχτό γκρι
+
+# View › Guides › right-click a guide
+	Edit Selected Guides	Επεξεργασία επιλεγμένων οδηγών
+	Clear Selected Guides	Απαλοιφή επιλεγμένων οδηγών
