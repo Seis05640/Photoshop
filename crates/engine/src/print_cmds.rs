@@ -64,8 +64,6 @@ pub struct Spooler {
 
 /// Why the built-in client could not spool: no route at all (the app's spooler may have one),
 /// or a failure on a route that exists (a wrong printer name, a rejected job).
-// The web and Windows stubs only ever report a missing route.
-#[cfg_attr(any(target_arch = "wasm32", target_os = "windows"), allow(dead_code))]
 enum SpoolError {
     NoRoute(String),
     Failed(String),
@@ -524,14 +522,24 @@ fn cups_spool(job: &PrintJob) -> std::result::Result<String, SpoolError> {
     Ok(format!("job {id} on {printer}"))
 }
 
+/// Without the client, a named print server is still a request for that route, so it fails
+/// rather than falling through to another spooler.
 #[cfg(target_os = "windows")]
-fn cups_spool(_: &PrintJob) -> std::result::Result<String, SpoolError> {
-    Err(SpoolError::NoRoute("printing to a Windows printer is not available in this build yet; print to PDF instead".into()))
+fn cups_spool(job: &PrintJob) -> std::result::Result<String, SpoolError> {
+    match &job.server {
+        Some(server) => {
+            Err(SpoolError::Failed(format!("no print server at {server}: printing through a print server is not available on Windows in this build")))
+        }
+        None => Err(SpoolError::NoRoute("printing to a Windows printer is not available in this build yet; print to PDF instead".into())),
+    }
 }
 
 #[cfg(target_arch = "wasm32")]
-fn cups_spool(_: &PrintJob) -> std::result::Result<String, SpoolError> {
-    Err(SpoolError::NoRoute("printing needs the desktop app".into()))
+fn cups_spool(job: &PrintJob) -> std::result::Result<String, SpoolError> {
+    match &job.server {
+        Some(server) => Err(SpoolError::Failed(format!("no print server at {server}: printing needs the desktop app"))),
+        None => Err(SpoolError::NoRoute("printing needs the desktop app".into())),
+    }
 }
 
 /// The printers the system's (or `printServer`'s) print server knows, with the default.
