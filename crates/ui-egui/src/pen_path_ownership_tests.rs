@@ -138,7 +138,7 @@ fn stale_drafts_are_cancelled_before_tool_switch_or_pointer_input() {
                     app.session.add_document((*source).clone(), None);
                     app.session.active_mut().unwrap().revision = revision;
                 }
-                _ => unreachable!(),
+                _ => panic!("unknown document-change fixture: {change}"),
             }
             let (current, n) = (app.session.active().unwrap().doc.clone(), steps(&app));
             app.ui.tool = Tool::Brush;
@@ -172,7 +172,7 @@ fn sync_views_and_input_apis_discard_unowned_or_closed_document_drafts() {
             }
             "toggle" => vector_ui::curvature_toggle(&mut app, 30.0, 60.0),
             "down" => vector_ui::curvature_down(&mut app, 160.0, 80.0),
-            _ => unreachable!(),
+            _ => panic!("unknown stale-draft entry fixture: {entry}"),
         }
         assert!(app.ui.pen.is_none(), "{entry}");
     }

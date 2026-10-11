@@ -272,7 +272,7 @@ fn layer_path_and_tool_changes_cancel_the_owned_edit() {
             "path" => app.ui.selected_path = Some("Saved".into()),
             "vectorMask" => app.ui.vector_mask_target = true,
             "tool" => app.ui.tool = Tool::Brush,
-            _ => unreachable!(),
+            _ => panic!("unknown target-change fixture: {change}"),
         }
         let (before_work, before_saved, n) = (work(&app), saved(&app), steps(&app));
         consume_stale_drag(&mut app);
