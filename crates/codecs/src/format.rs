@@ -22,6 +22,10 @@ pub enum Format {
     /// Encode-only behind the `avif` feature; see [`ASYMMETRIC_EXCEPTIONS`].
     Avif,
     Jxl,
+    /// Krita .kra (zip container with merged PNG + metadata): read-only; see issue #3692
+    Kra,
+    /// PCX (ZSoft Paintbrush): read-only; open spec, tiny decoder
+    Pcx,
     /// HEIF/HEIC (HEVC-coded): read-only; see [`ASYMMETRIC_EXCEPTIONS`].
     Heif,
 }
@@ -77,7 +81,7 @@ const ALL_LAYOUTS: &[ChannelLayout] = &[L::Gray, L::GrayA, L::Rgb, L::Rgba, L::C
 
 impl Format {
     /// Every format known to the crate (enabled or not).
-    pub const ALL: [Format; 14] = [
+    pub const ALL: [Format; 17] = [
         Format::Png,
         Format::Jpeg,
         Format::Tiff,
@@ -91,6 +95,9 @@ impl Format {
         Format::OpenExr,
         Format::Hdr,
         Format::Avif,
+        Format::Jxl,
+        Format::Kra,
+        Format::Pcx,
         Format::Heif,
     ];
 
@@ -121,6 +128,8 @@ impl Format {
             Format::Avif => "AVIF",
             Format::Heif => "HEIF",
             Format::Jxl => "JXL",
+            Format::Kra => "KRA",
+            Format::Pcx => "PCX",
         }
     }
 
@@ -143,6 +152,8 @@ impl Format {
             Format::Avif => &["avif"],
             Format::Heif => &["heic", "heif", "hif"],
             Format::Jxl => &["jxl"],
+            Format::Kra => &["kra"],
+            Format::Pcx => &["pcx"],
         }
     }
 
@@ -163,6 +174,8 @@ impl Format {
             Format::Avif => "image/avif",
             Format::Heif => "image/heif",
             Format::Jxl => "image/jxl",
+            Format::Kra => "image/kra",
+            Format::Pcx => "image/pcx",
         }
     }
 
@@ -212,7 +225,9 @@ pub fn caps(format: Format) -> FormatCaps {
         Format::Heif => {
             FormatCaps { read: cfg!(feature = "heif"), write: false, depths: &[S::U8, S::U16], icc: true, exif: true, xmp: true, lossy: true, ..base }
         },
-        Format::Jxl => FormatCaps { read: cfg!(feature = "jxl"), write: false, depths: &[S::U8, S::U16], ..base }
+        Format::Jxl => FormatCaps { read: cfg!(feature = "jxl"), write: false, depths: &[S::U8, S::U16], ..base },
+        Format::Kra => FormatCaps { read: true, write: false, depths: &[S::U8, S::U16], ..base },
+        Format::Pcx => FormatCaps { read: true, write: false, depths: &[S::U8, S::U16], ..base }
     }
 }
 

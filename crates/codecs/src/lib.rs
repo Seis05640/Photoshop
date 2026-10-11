@@ -73,6 +73,8 @@ pub fn decode_as_with(format: Format, bytes: &[u8], opts: &DecodeOptions) -> Res
         Format::OpenExr => exr::decode(bytes, l),
         Format::Heif => heif::decode(bytes, l, opts.keep_orientation),
         Format::Jxl => jxl::decode(bytes, l, opts.keep_orientation),
+        Format::Kra => Err(CodecError::unsupported(format, "KRA decoding not yet implemented")),
+        Format::Pcx => Err(CodecError::unsupported(format, "PCX decoding not yet implemented")),
         Format::Gif | Format::Bmp | Format::Tga | Format::Ico | Format::Qoi | Format::Hdr | Format::Avif => via_image::decode(format, bytes, l),
     }?;
     // Without a resolution of the format's own (PNG pHYs, TIFF tags, JPEG's metadata), the
@@ -208,6 +210,8 @@ pub fn encode(image: &Image, format: Format, opts: &EncodeOptions) -> Result<Vec
         Format::OpenExr => exr::encode(image, plan, opts),
         Format::Heif => Err(CodecError::unsupported(format, "encoding is not available in this build")),
         Format::Jxl => Err(CodecError::unsupported(format, "encoding is not available in this build")),
+        Format::Kra => Err(CodecError::unsupported(format, "encoding is not available in this build")),
+        Format::Pcx => Err(CodecError::unsupported(format, "encoding is not available in this build")),
         Format::Gif | Format::Bmp | Format::Tga | Format::Ico | Format::Qoi | Format::Hdr | Format::Avif => via_image::encode(format, image, plan, opts),
     }
 }
