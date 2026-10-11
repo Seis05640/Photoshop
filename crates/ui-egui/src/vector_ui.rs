@@ -1950,9 +1950,13 @@ mod tests {
             assert_eq!(pen.knots[1][1], incoming);
             assert_eq!(pen.knots[1][2], pen.knots[1][0]);
             let saved = serde_json::to_value(pen).unwrap();
+            assert!(!pen.edit_undo.is_empty());
+            assert!(saved.get("edit_undo").is_none(), "draft editing history belongs to its runtime owner");
             let restored: PenPath = serde_json::from_value(saved).unwrap();
+            assert!(restored.edit_undo.is_empty());
             let mut expected = pen.clone();
             expected.owner = None;
+            expected.edit_undo.clear();
             assert_eq!(restored, expected);
             assert_eq!(pen_to_json(&restored, false)["subpaths"][0]["knots"][1]["smooth"], false);
             pen_down(&mut app, 100.0 + 7.0 / f64::from(zoom), 100.0);

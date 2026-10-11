@@ -245,23 +245,34 @@ fn native_convert_cursor_keeps_the_captured_action_when_command_is_pressed_mid_d
         if committed {
             click(&mut h, first);
         }
+        let command = Modifiers { command: true, ctrl: true, ..Default::default() };
+        if !committed {
+            h.hover_at(first);
+            h.event(Event::ModifiersChanged(Modifiers::ALT));
+            h.event(Event::PointerButton { pos: first, button: PointerButton::Primary, pressed: true, modifiers: Modifiers::ALT });
+            h.step();
+            h.event(Event::ModifiersChanged(command));
+            h.event(Event::PointerButton { pos: first, button: PointerButton::Primary, pressed: false, modifiers: command });
+            h.run_steps(2);
+            assert_eq!(h.state().ui.pen.as_ref().expect("Alt press must not become a Command click at release").knots.len(), 3);
+            assert!(!pen_converting(h.state()));
+        }
         h.hover_at(first);
         h.event(Event::ModifiersChanged(Modifiers::ALT));
         h.run_steps(2);
         let convert = h.output().platform_output.cursor_image.clone().expect("native Convert cursor before press");
         h.event(Event::PointerButton { pos: first, button: PointerButton::Primary, pressed: true, modifiers: Modifiers::ALT });
         h.step();
-        let command = Modifiers { command: true, ctrl: true, ..Default::default() };
         h.event(Event::ModifiersChanged(command));
         let to = first + vec2(0.0, 20.0);
         h.hover_at(to);
         h.run_steps(2);
+        assert!(pen_converting(h.state()), "Alt press must start Convert despite Command arriving before the drag threshold: committed={committed}");
         assert_eq!(
-            h.output().platform_output.cursor_image.as_ref().unwrap().rgba,
+            h.output().platform_output.cursor_image.as_ref().expect("captured Convert must retain its native cursor").rgba,
             convert.rgba,
             "captured Convert wins over mid-drag command: committed={committed}"
         );
-        assert!(pen_converting(h.state()));
         h.event(Event::PointerButton { pos: to, button: PointerButton::Primary, pressed: false, modifiers: command });
         h.run_steps(2);
         assert!(!pen_converting(h.state()));
