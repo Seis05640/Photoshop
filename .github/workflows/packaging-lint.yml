@@ -21,3 +21,11 @@ jobs:
   lint:
     # Intentionally tracked at @main (not SHA-pinned) so org-wide CI improvements, security fixes, and build optimizations propagate without PR churn across all craftapp repos.
     uses: storytold/craft-common-actions/.github/workflows/packaging-lint.yml@main
+
+  apprun-cli:
+    name: AppImage bundled CLI and MCP entry point
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify bundled CLI and MCP entry point
+        run: bash packaging/linux/apprun-cli-test.sh
