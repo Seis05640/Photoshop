@@ -815,7 +815,7 @@ fn path_set(s: &mut Session, p: &Value) -> Result<Value> {
             };
             // Appending small Pen components must not bypass the complete path's bounds and
             // tessellation budget. Validate before changing the document or its history.
-            vector::flatten::validate_shape(&merged, None).map_err(|e| bad(CMD, e))?;
+            vector::flatten::validate_path(&merged).map_err(|e| bad(CMD, e))?;
             Ok(merged)
         };
         if is_work(name.as_deref()) {

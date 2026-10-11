@@ -46,8 +46,35 @@ fn invalid_path_coordinates_leave_work_and_saved_paths_unchanged() {
         session.execute("path.set", json!({"name": name, "path": {"subpaths": [{"knots": [[10, 10], [20, 20]]}]}})).unwrap();
         let before = session.execute("path.info", json!({"name": name})).unwrap();
         let history = session.active().unwrap().history.entries().len();
-        assert!(session.execute("path.set", json!({"name": name, "op": "combine", "path": {"subpaths": [{"knots": [[2_000_000, 10], [20, 20]]}]}})).is_err());
+        assert!(
+            session.execute("path.set", json!({"name": name, "op": "combine", "path": {"subpaths": [{"knots": [[-1.0e308, 10], [1.0e308, 20]]}]}})).is_err()
+        );
         assert_eq!(session.execute("path.info", json!({"name": name})).unwrap(), before);
         assert_eq!(session.active().unwrap().history.entries().len(), history);
+    }
+}
+
+#[test]
+fn large_straight_work_and_saved_paths_append_and_undo_without_shape_coordinate_limits() {
+    for name in ["work", "Saved drawing"] {
+        let mut session = session();
+        let large = json!({"subpaths": [{"closed": true, "knots": [[0.0, 0.0], [3.0e9, 0.0], [3.0e9, 1.0e9]]}]});
+        let before = session.active().unwrap().doc.clone();
+        let history = session.active().unwrap().history.entries().len();
+        session.execute("path.set", json!({"name":name,"path":large})).unwrap();
+        let first = session.execute("path.info", json!({"name":name})).unwrap();
+        assert_eq!(first["path"]["subpaths"][0]["knots"][1]["anchor"], json!([3.0e9, 0.0]));
+        assert_eq!(session.active().unwrap().history.entries().len(), history + 1);
+        session.execute("path.set", json!({"name":name,"op":"combine","path":{"subpaths":[{"knots":[[10,20],[80,20]]}]}})).unwrap();
+        let appended = session.execute("path.info", json!({"name":name})).unwrap();
+        assert_eq!(appended["path"]["subpaths"].as_array().unwrap().len(), 2);
+        assert_eq!(appended["path"]["subpaths"][0], first["path"]["subpaths"][0]);
+        session.execute("edit.undo", json!({})).unwrap();
+        assert_eq!(session.execute("path.info", json!({"name":name})).unwrap(), first);
+        session.execute("edit.undo", json!({})).unwrap();
+        assert_eq!(session.active().unwrap().doc.work_path, before.work_path);
+        assert_eq!(session.active().unwrap().doc.paths, before.paths);
+        session.execute("edit.redo", json!({})).unwrap();
+        assert_eq!(session.execute("path.info", json!({"name":name})).unwrap(), first);
     }
 }

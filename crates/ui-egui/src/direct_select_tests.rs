@@ -326,7 +326,7 @@ fn command_drag_after_failed_pen_commit_preserves_draft_and_existing_work_path()
     let mut app = app(Tool::Pen);
     with_path(&mut app);
     app.ui.extras.snap = false;
-    for [x, y] in [[2_000_000.0, 0.0], [40.0, 120.0]] {
+    for [x, y] in [[1e40, 0.0], [40.0, 120.0]] {
         tool_event(&mut app, ToolEvent::Down { x, y, pressure: 1.0 }, Modifiers::NONE);
         tool_event(&mut app, ToolEvent::Up { x, y }, Modifiers::NONE);
     }
