@@ -213,3 +213,28 @@ fn truncated_raws_with_a_fittable_preview_do_not_panic() {
         let _ = import("x.nef", &b[..n]);
     }
 }
+
+/// The open-time Camera Raw re-develop keeps the colour rendering the default open used: a raw
+/// without calibration gets the same look fitted to its JPEG, so neutral settings give the same
+/// pixels, and the previews' tone curve is the look's.
+#[test]
+fn a_re_develop_keeps_the_fitted_look() {
+    let (w, h) = (480, 320);
+    let cam = patches(w, h);
+    let nef = nef_uncompressed(&cam, w, h, Some(camera_rendering(&cam, w, h)));
+    let opened = import("DSC_0003.NEF", &nef).unwrap();
+    let (again, _) = photocraft_io::raw::import_raw_tuned("DSC_0003.NEF", &nef, &Default::default()).unwrap();
+    assert!(fitted(&again.warnings), "{:?}", again.warnings);
+    let pixels = |d: &photocraft_doc::Document| {
+        let s = d.layers[0].surface().unwrap();
+        let mut px = vec![[0.0f32; 4]; w * h];
+        s.read_rgba_into(photocraft_geom::Rect::new(0, 0, w as i32, h as i32), &mut px);
+        px
+    };
+    assert_eq!(pixels(&opened.document), pixels(&again.document));
+    let curve = photocraft_io::raw::tone_curve(&nef);
+    assert!(curve.len() > 2 && curve.windows(2).all(|k| k[1][0] > k[0][0] && k[1][1] >= k[0][1]), "{curve:?}");
+    // The camera's brightening curve: mid-grey comes out lighter.
+    let mid = curve.iter().find(|k| k[0] >= 0.18).unwrap();
+    assert!(mid[1] > mid[0], "{mid:?}");
+}
