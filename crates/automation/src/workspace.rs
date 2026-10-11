@@ -307,6 +307,7 @@ fn params_contain_ambient_path(id: &str, params: &Value) -> bool {
 }
 
 fn profile_command_may_read_ambient(id: &str, params: &Value) -> bool {
+    // Installed profiles scan OS and user directories even without a request path.
     if matches!(id, "color.profileMismatch" | "edit.colorSettings" | "edit.installedProfiles" | "view.proofSetup") {
         return true;
     }
@@ -818,6 +819,7 @@ mod tests {
                 | "path.deleteAnchor"
                 | "path.clippingPath.set"
                 | "path.rename"
+                | "path.stroke"
                 | "select.toWorkPath"
                 | "layer.vectorMask.add"
                 | "layer.vectorMask.edit"
