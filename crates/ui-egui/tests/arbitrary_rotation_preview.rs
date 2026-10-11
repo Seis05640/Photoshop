@@ -5,12 +5,9 @@ use egui_kittest::kittest::Queryable;
 use photocraft_ui_egui::PhotocraftApp;
 use photocraft_ui_egui::control::{ControlRequest, Outcome, handle};
 use serde_json::{Value, json};
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 type Harness = egui_kittest::Harness<'static, PhotocraftApp>;
-
-// Serialize complete device lifetimes: concurrent software GPU fixtures can crash DX12.
-static GPU_TEST_LOCK: Mutex<()> = Mutex::new(());
 
 fn harness() -> Option<Harness> {
     let built = std::panic::catch_unwind(|| {
@@ -90,7 +87,7 @@ fn blue(h: &mut Harness, name: &str) -> (usize, u32, u32) {
 
 #[test]
 fn size_changing_rotation_preview_is_visible_and_preserves_the_panned_center() {
-    let _gpu = GPU_TEST_LOCK.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
+    let _gpu = photocraft_testkit::gpu_lock();
     let Some(mut h) = harness() else { return };
     h.run_steps(4);
     for (width, height, zoom, center, degrees, factor) in [
@@ -125,7 +122,7 @@ fn size_changing_rotation_preview_is_visible_and_preserves_the_panned_center() {
 
 #[test]
 fn preview_toggle_and_cancel_keep_the_document_while_ok_applies_rotation() {
-    let _gpu = GPU_TEST_LOCK.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
+    let _gpu = photocraft_testkit::gpu_lock();
     let Some(mut h) = harness() else { return };
     h.run_steps(4);
     setup(&mut h, 400, 240, 1.0, [200.0, 120.0]);

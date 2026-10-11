@@ -3,19 +3,15 @@
 //! through the CPU path); sRGB documents are shown unchanged. Skips when no GPU adapter with
 //! 32-bit float render targets exists (like `crates/gpu/tests/parity.rs`).
 
+use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::{Arc, Mutex};
 
 use photocraft_ui_egui::PhotocraftApp;
 use serde_json::json;
 
-// Serialize complete device lifetimes: concurrent software GPU fixtures can crash DX12.
-static GPU_TEST_LOCK: Mutex<()> = Mutex::new(());
-
 /// Renders the UI with one 512² document of `rgb` tagged with `profile`; returns the median
 /// colour of a patch at the centre of the canvas, for the GPU and the CPU canvas.
 fn render(profile: &str, rgb: [f32; 3], reopen: bool) -> Option<([u8; 3], [u8; 3])> {
-    let _gpu = GPU_TEST_LOCK.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
     let float_targets = Arc::new(AtomicBool::new(false));
     let ft = float_targets.clone();
     let observer = Arc::new(std::sync::Mutex::new(None));
@@ -114,6 +110,7 @@ fn close(a: [u8; 3], b: [f32; 3], tol: f32) -> bool {
 
 #[test]
 fn display_p3_is_converted_on_gpu_and_cpu_canvases() {
+    let _gpu = photocraft_testkit::gpu_lock();
     // P3 (0.8, 0.5, 0.3) → sRGB (216.7, 122.9, 64.3) (see engine display_color_tests); raw would be (204, 128, 77).
     let Some((gpu, cpu)) = render("display-p3", [0.8, 0.5, 0.3], true) else { return };
     assert!(close(cpu, [216.7, 122.9, 64.3], 2.0), "CPU canvas {cpu:?}");
@@ -122,6 +119,7 @@ fn display_p3_is_converted_on_gpu_and_cpu_canvases() {
 
 #[test]
 fn srgb_documents_are_unchanged() {
+    let _gpu = photocraft_testkit::gpu_lock();
     let Some((gpu, cpu)) = render("srgb", [0.8, 0.5, 0.3], false) else { return };
     assert!(close(cpu, [204.0, 128.0, 77.0], 1.0), "CPU canvas {cpu:?}");
     assert!(close(gpu, [204.0, 128.0, 77.0], 1.0), "GPU canvas {gpu:?}");
