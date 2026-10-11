@@ -831,6 +831,7 @@ fn pending_pdf_picker_does_not_count_as_an_open_tab() {
     finish_named_open(&mut app, "B.png");
     assert_eq!(doc_names(&app), ["B.png", "C.png"]);
     assert_eq!(app.jobs.batches.len(), 1, "the picker retains its input order");
+    app.background_jobs = false;
     app.open_bytes("unrelated.psd", b"x").unwrap();
     app.cancel_pdf_import();
     assert!(app.jobs.batches.is_empty());
