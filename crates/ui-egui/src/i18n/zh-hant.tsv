@@ -2475,6 +2475,37 @@ fontWeight	Italic	斜體
 	Quick Selection found nothing there	快速選取在該處找不到任何內容
 	Object Selection found nothing there — try a tighter rectangle	物件選取在該處找不到任何內容 — 請嘗試更緊密的矩形
 	No subject found — try a rectangle around the object	找不到主體 — 請嘗試在物件周圍繪製矩形
+	W	寬
+	H	高
+	Align to Canvas	對齊至畫布
+	Arrowheads	箭頭
+	Bring Shape Forward	形狀前移
+	Bring Shape to Front	形狀置於頂層
+	Constrain Proportions	維持比例
+	Distribute Horizontally	水平分佈
+	Distribute Vertically	垂直分佈
+	End	終點
+	Mask	遮色片
+	New Layer	新增圖層
+	New Path	新增路徑
+	Path Alignment	路徑對齊
+	Path Arrangement	路徑排列
+	Path Operations	路徑操作
+	Path Options	路徑選項
+	Send Shape Backward	形狀後移
+	Send Shape to Back	形狀置於底層
+	Show Path	顯示路徑
+	Start	起點
+	Align Edges	對齊邊緣
+	Unconstrained	不受限制
+	Proportional	比例
+	Smooth Indents	平滑凹口
+	Concavity:	凹度：
+	Solid Color	純色
+	Color Picker	色彩選擇器
+	Recent Colors	最近使用的顏色
+	No recent colors	尚無最近使用的顏色
+	Color opacity	顏色不透明度
 	Auto Erase	自動擦除
 	Click the first point or press {key} to close · {del} removes a point · Esc cancels	按一下第一個點或按 {key} 封閉 · {del} 刪除一個點 · Esc 取消
 	Click, then move along an edge · click to fasten a point · {alt}-click for a straight segment · double-click to close	按一下，然後沿著邊緣移動 · 按一下固定一個點 · {alt}-按一下畫直線區段 · 按兩下封閉
@@ -2527,8 +2558,6 @@ cameraData	Lens	鏡頭
 	Make Portrait	設為直向
 	Make Landscape	設為橫向
 	Add New Artboard	新增工作區域
-	W	寬
-	H	高
 	Freeform Pen Tool	自由筆型工具
 	Curvature Pen Tool	曲線筆工具
 	Curve Fit:	曲線擬合：
@@ -2560,6 +2589,7 @@ cameraData	Lens	鏡頭
 	Select the crop presets to delete	選取要刪除的裁切預設集
 	Enter a name for the crop preset	輸入裁切預設集的名稱
 	There is no crop size or ratio to save	沒有可儲存的裁切尺寸或比例
+	Shape color selector	形狀顏色選擇器
 
 # Color Sampler (added with the i18n coverage repair)
 	Click to place · Alt-click or drag off-canvas to remove	按一下以放置 · Alt 按一下或拖曳至畫布外以移除

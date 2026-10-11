@@ -3597,6 +3597,31 @@ cameraRaw	Masking	Маскування
 	Quick Selection found nothing there	Швидке виділення нічого тут не знайшло
 	Object Selection found nothing there — try a tighter rectangle	Виділення об'єктів нічого тут не знайшло — спробуйте вужчий прямокутник
 	No subject found — try a rectangle around the object	Об'єкт не знайдено — спробуйте прямокутник навколо об'єкта
+	Align to Canvas	Вирівняти за полотном
+	Arrowheads	Наконечники стрілок
+	Bring Shape Forward	Перемістити фігуру вперед
+	Bring Shape to Front	Перемістити фігуру на передній план
+	Constrain Proportions	Зберегти пропорції
+	Distribute Horizontally	Розподілити горизонтально
+	Distribute Vertically	Розподілити вертикально
+	End	Кінець
+	Path Alignment	Вирівнювання контурів
+	Path Arrangement	Порядок контурів
+	Path Operations	Операції з контурами
+	Path Options	Параметри контуру
+	Send Shape Backward	Перемістити фігуру назад
+	Send Shape to Back	Перемістити фігуру на задній план
+	Show Path	Показати контур
+	Start	Початок
+	Align Edges	Вирівняти краї
+	Unconstrained	Без обмежень
+	Proportional	Пропорційно
+	Smooth Indents	Згладити западини
+	Concavity:	Увігнутість:
+	Color Picker	Вибір кольору
+	Recent Colors	Нещодавно використані кольори
+	No recent colors	Немає нещодавно використаних кольорів
+	Color opacity	Непрозорість кольору
 	Click the first point or press {key} to close · {del} removes a point · Esc cancels	Клацніть першу точку або натисніть {key}, щоб замкнути · {del} видаляє точку · Esc скасовує
 	Click, then move along an edge · click to fasten a point · {alt}-click for a straight segment · double-click to close	Клацніть і ведіть уздовж краю · клацання закріплює точку · {alt}-клацання — прямий відрізок · подвійне клацання замикає
 	Follows only edges this close to the pointer ([ and ] change it)	Відстежує лише краї на такій відстані від вказівника ([ і ] змінюють її)
@@ -3676,6 +3701,7 @@ cameraData	Lens	Об'єктив
 	There is no crop size or ratio to save	Немає розміру чи співвідношення сторін кадрування для збереження
 	Scale:	Масштаб:
 	Snap to Origin	Прив'язати до початку координат
+	Shape color selector	Вибір кольору фігури
 
 # Color Sampler (added with the i18n coverage repair)
 	Click to place · Alt-click or drag off-canvas to remove	Клацніть, щоб розмістити · Alt-клацання або перетягування за межі полотна для видалення

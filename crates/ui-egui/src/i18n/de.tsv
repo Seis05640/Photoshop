@@ -2535,6 +2535,34 @@ fontWeight	Italic	Kursiv
 	Quick Selection found nothing there	Die Schnellauswahl hat dort nichts gefunden
 	Object Selection found nothing there — try a tighter rectangle	Die Objektauswahl hat dort nichts gefunden — versuchen Sie ein engeres Rechteck
 	No subject found — try a rectangle around the object	Kein Motiv gefunden — versuchen Sie ein Rechteck um das Objekt
+	Align to Canvas	An Leinwand ausrichten
+	Arrowheads	Pfeilspitzen
+	Bring Shape Forward	Form nach vorne
+	Bring Shape to Front	Form in den Vordergrund
+	Constrain Proportions	Proportionen beibehalten
+	Distribute Horizontally	Horizontal verteilen
+	Distribute Vertically	Vertikal verteilen
+	End	Ende
+	New Layer	Neue Ebene
+	New Path	Neuer Pfad
+	Path Alignment	Pfadausrichtung
+	Path Arrangement	Pfadanordnung
+	Path Operations	Pfadoperationen
+	Path Options	Pfadoptionen
+	Send Shape Backward	Form nach hinten
+	Send Shape to Back	Form in den Hintergrund
+	Show Path	Pfad anzeigen
+	Start	Anfang
+	Align Edges	Kanten ausrichten
+	Unconstrained	Unbeschränkt
+	Proportional	Proportional
+	Smooth Indents	Einbuchtungen glätten
+	Concavity:	Einbuchtung:
+	Solid Color	Volltonfarbe
+	Color Picker	Farbwähler
+	Recent Colors	Zuletzt verwendete Farben
+	No recent colors	Noch keine Farben verwendet
+	Color opacity	Farbdeckkraft
 	Click the first point or press {key} to close · {del} removes a point · Esc cancels	Klicke auf den ersten Punkt oder drücke {key} zum Schließen · {del} entfernt einen Punkt · Esc bricht ab
 	Click, then move along an edge · click to fasten a point · {alt}-click for a straight segment · double-click to close	Klicke und bewege dich entlang einer Kante · Klicken setzt einen Ankerpunkt · {alt}-Klick für ein gerades Segment · Doppelklick schließt
 	Follows only edges this close to the pointer ([ and ] change it)	Folgt nur Kanten so nah am Zeiger ([ und ] ändern den Wert)
@@ -2598,6 +2626,34 @@ cameraData	Lens	Objektiv
 	Snap to Origin	An Ursprung ausrichten
 	Search settings…	Einstellungen durchsuchen…
 	No matching settings	Keine passenden Einstellungen
+
+# Vector clipboard Paste As
+vectorPaste	Paste	Einfügen
+vectorPaste	Paste as:	Einfügen als:
+vectorPaste	Layers	Ebenen
+vectorPaste	Smart Object	Smart-Objekt
+vectorPaste	Pixels	Pixel
+vectorPaste	Path	Pfad
+vectorPaste	Shape Layer	Formebene
+vectorPaste	SVG text is converted to outlines, not editable type.	SVG-Text wird in Konturen umgewandelt und bleibt nicht als Text bearbeitbar.
+vectorPaste	Import warnings:	Importhinweise:
+vectorPaste	The SVG is too large to rasterise (24 million pixel limit)	Das SVG ist zum Rastern zu groß (maximal 24 Millionen Pixel).
+vectorPaste	The SVG has incompatible fill rules; use Layers or Smart Object	Das SVG enthält unvereinbare Füllregeln. Verwenden Sie Ebenen oder ein Smart-Objekt.
+vectorPaste	The SVG contains rasterised objects without editable paths	Das SVG enthält gerasterte Objekte ohne bearbeitbare Pfade.
+vectorPaste	The SVG contains no editable paths	Das SVG enthält keine bearbeitbaren Pfade.
+vectorPaste	Shape Layer requires one shape without group blending; use Layers to preserve this SVG	Eine Formebene benötigt eine einzelne Form ohne Gruppenmischung. Verwenden Sie Ebenen, um dieses SVG zu erhalten.
+vectorPaste	The SVG contains no editable shape	Das SVG enthält keine bearbeitbare Form.
+vectorPaste	The pasted shape caches exceed the clipboard cache budget; use Pixels or Smart Object	Die eingefügten Formen überschreiten das Speicherbudget der Zwischenablage. Verwenden Sie Pixel oder ein Smart-Objekt.
+smartSvg	Edit SVG Smart Object	SVG-Smart-Objekt bearbeiten
+smartSvg	Choose the application used to edit this SVG:	Wählen Sie die Anwendung zum Bearbeiten dieses SVG:
+smartSvg	Clipboard SVG does not reliably identify its source application.	SVG aus der Zwischenablage identifiziert seine Herkunftsanwendung nicht zuverlässig.
+smartSvg	Other application	Andere Anwendung
+smartSvg	PhotoCraft (internal editor)	PhotoCraft (interner Editor)
+smartSvg	Choose executable…	Programm auswählen…
+smartSvg	Save to the opened SVG file. Each saved change becomes one undo step in PhotoCraft.	Speichern Sie die geöffnete SVG-Datei. Jede gespeicherte Änderung wird in PhotoCraft zu einem Rückgängig-Schritt.
+smartSvg	Updates wait while another document or an editing dialog is active.	Aktualisierungen warten, während ein anderes Dokument oder ein Bearbeitungsdialog aktiv ist.
+smartSvg	Stop syncing this Smart Object	Synchronisierung dieses Smart-Objekts beenden
+smartSvg	SVG editor opened. Save the SVG to update this Smart Object.	SVG-Editor geöffnet. Speichern Sie das SVG, um dieses Smart-Objekt zu aktualisieren.
 # Select and Mask view modes (#1754)
 	Onion Skin	Zwiebelschicht
 	Marching Ants	Laufende Ameisen
@@ -2614,6 +2670,7 @@ cameraData	Lens	Objektiv
 	Paint over hair or fur on the image; Alt paints the other mode	Über Haare oder Fell im Bild malen; Alt malt im anderen Modus
 	Clear Brush Strokes	Pinselstriche löschen
 	Show rulers	Lineale anzeigen
+	Shape color selector	Formfarbauswahl
 
 # Color Sampler (added with the i18n coverage repair)
 	Click to place · Alt-click or drag off-canvas to remove	Klicken zum Platzieren · Alt-Klick oder Ziehen außerhalb der Arbeitsfläche zum Entfernen
