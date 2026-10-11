@@ -64,9 +64,9 @@ note = "paint_mouse.rs brush picker and canvas_tool_menu.rs selection actions; o
 [[item]]
 id = "UI-217-9"
 target = "UI scale presets 100/115/125/150/200 % through zoom_factor, remembered"
-status = "missing"
+status = "done"
 issue = 217
-note = "prefs.rs:61 UiScale unused; input_tests.rs:71 asserts zoom_factor stays 1.0"
+note = "prefs.rs:64 UiScale offers Auto and 75-300 % in 5 % steps up to 125 % (#2492, #3222); prefs_ui.rs sync_display_scale applies it through set_zoom_factor and it is saved with Preferences (older_preferences_without_a_language_follow_the_system reloads it); scale_preferences_and_monitor_changes_apply_live asserts pixels_per_point for each preset"
 
 [[item]]
 id = "UI-217-10"
