@@ -15,6 +15,7 @@ use std::sync::Arc;
 use photocraft_cms::{Builtin, Intent, Profile, Transform};
 use photocraft_codecs::{self as codecs, ChannelLayout, Format, Image, SampleType};
 use photocraft_raw::{CameraLook, DevelopOptions, Limits, RawError, Reference, Sensor, WhiteBalance};
+pub use photocraft_raw::{Tone, retone};
 
 use crate::flat::image_to_document;
 use crate::{ImportResult, IoError};
@@ -41,8 +42,8 @@ fn upright_preview(raw: &[u8], jpeg: &[u8]) -> Result<Image, IoError> {
     Ok(img.oriented(o)?)
 }
 
-/// Camera Raw's Temperature, Tint and Exposure, applied while developing the sensor data
-/// (the open-time Camera Raw dialog) instead of to the developed RGB pixels.
+/// Camera Raw's Temperature, Tint, Exposure, Shadows and Highlights, applied while developing the
+/// sensor data (the open-time Camera Raw dialog) instead of to the developed RGB pixels.
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub struct RawTuning {
     /// −100…100, as `photocraft_algo::camera_raw::CameraRaw::temperature`.
@@ -51,11 +52,17 @@ pub struct RawTuning {
     pub tint: f32,
     /// EV, as `CameraRaw::exposure`.
     pub exposure: f32,
+    /// −100…100, as `CameraRaw::shadows`: in linear light before the tone curve, as Camera Raw
+    /// does for raw files ([`photocraft_raw::Tone`]).
+    pub shadows: f32,
+    /// −100…100, as `CameraRaw::highlights`.
+    pub highlights: f32,
 }
 
 /// Develops a raw file with `tuning` applied at the raw stage: Exposure as develop exposure,
-/// Temperature / Tint as gains on the camera's as-shot white-balance multipliers (the same
-/// gains the Camera Raw filter applies to RGB). The second value is `false` when the file has
+/// Shadows / Highlights in linear light before the tone curve, Temperature / Tint as gains on the
+/// camera's as-shot white-balance multipliers (the same gains the Camera Raw filter applies to
+/// RGB). The second value is `false` when the file has
 /// no as-shot white balance: Temperature / Tint were then not applied, and the caller keeps
 /// them as RGB adjustments.
 pub fn import_raw_tuned(name: &str, bytes: &[u8], tuning: &RawTuning) -> Result<(ImportResult, bool), IoError> {
@@ -65,7 +72,11 @@ pub fn import_raw_tuned(name: &str, bytes: &[u8], tuning: &RawTuning) -> Result<
         return Err(IoError::Raw(RawError::Malformed(format!("exposure {} EV is out of range", tuning.exposure))));
     }
     let sensor = photocraft_raw::decode(bytes, &limits()).map_err(IoError::Raw)?;
-    let mut opts = DevelopOptions { limits: limits(), exposure, ..Default::default() };
+    let tone = photocraft_raw::Tone { shadows: tuning.shadows.clamp(-100.0, 100.0), highlights: tuning.highlights.clamp(-100.0, 100.0) };
+    // The colour rendering the default open used (a look fitted to the camera's JPEG for files
+    // without colour calibration), so re-developing changes only what the sliders change.
+    let camera_look = default_look(bytes, &sensor);
+    let mut opts = DevelopOptions { limits: limits(), exposure, tone, camera_look, ..Default::default() };
     let wb_applied = match sensor.camera_wb {
         Some(m) => {
             let g = wb_gains(tuning.temperature, tuning.tint);
@@ -80,8 +91,37 @@ pub fn import_raw_tuned(name: &str, bytes: &[u8], tuning: &RawTuning) -> Result<
     } else {
         "estimated white balance".into()
     };
-    let summary = format!("developed in Camera Raw (exposure {:+.2} EV, {wb})", tuning.exposure);
+    let tone = if tone.is_neutral() { String::new() } else { format!(", shadows {:+.0}, highlights {:+.0}", tone.shadows, tone.highlights) };
+    let summary = format!("developed in Camera Raw (exposure {:+.2} EV{tone}, {wb})", tuning.exposure);
     Ok((developed_document(name, format, dev, &summary)?, wb_applied))
+}
+
+/// The tone curve `bytes` develop with by default: the fitted look's for a file without colour
+/// calibration (see [`import_raw_with`]), else the camera profile's (empty: none, or not a raw
+/// this crate decodes). For previews of the open-time Shadows / Highlights
+/// ([`photocraft_raw::retone`]), in linear-light knots.
+pub fn tone_curve(bytes: &[u8]) -> Vec<[f32; 2]> {
+    let Ok(sensor) = photocraft_raw::decode(bytes, &limits()) else { return Vec::new() };
+    match default_look(bytes, &sensor) {
+        Some(look) => look.tone.as_ref().map(look_knots).unwrap_or_default(),
+        None => sensor.tone_curve,
+    }
+}
+
+/// A fitted look's tone curve as knots for [`photocraft_raw::retone`] (which reads them
+/// log-linearly): sampled densely enough that the two agree within a fraction of a code value.
+fn look_knots(t: &photocraft_raw::ToneCurve) -> Vec<[f32; 2]> {
+    const N: usize = 256;
+    (1..=N).map(|i| (i as f64 / N as f64).powi(2)).map(|x| [x as f32, t.eval(x) as f32]).collect()
+}
+
+/// The look a default open develops `bytes` with: fitted to the embedded JPEG when the file has
+/// no colour calibration and the fit clearly helps (as [`import_raw_with`] does), else `None`.
+fn default_look(bytes: &[u8], sensor: &Sensor) -> Option<CameraLook> {
+    if !sensor.color.calibrations.is_empty() {
+        return None;
+    }
+    fit_preview_look(bytes, sensor, &DevelopOptions { limits: limits(), ..Default::default() }).ok()
 }
 
 /// "Canon" + "Canon EOS 80D" and "NIKON CORPORATION" + "NIKON D3200" read as the model alone:
