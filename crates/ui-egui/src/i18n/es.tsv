@@ -2695,3 +2695,7 @@ cameraData	Lens	Objetivo
 	Apply mask to layer before removing?	¿Aplicar la máscara a la capa antes de eliminarla?
 	The layer or its mask changed. Drag the mask onto the Trash again.	La capa o su máscara ha cambiado. Arrastre de nuevo la máscara a la papelera.
 	Delete the vector mask?	¿Eliminar la máscara vectorial?
+
+# Unavailable View overlays
+	Bristle brush previews are not implemented	Las vistas previas de pinceles de cerdas no están implementadas
+	Artboard-specific guides are not implemented	Las guías específicas de las mesas de trabajo no están implementadas

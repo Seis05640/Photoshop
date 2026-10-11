@@ -3776,3 +3776,7 @@ cameraData	Lens	Lens
 	Apply mask to layer before removing?	Masker toepassen op laag voordat het wordt verwijderd?
 	The layer or its mask changed. Drag the mask onto the Trash again.	De laag of het masker is gewijzigd. Sleep het masker opnieuw naar de prullenbak.
 	Delete the vector mask?	Het vectormasker verwijderen?
+
+# Unavailable View overlays
+	Bristle brush previews are not implemented	Voorvertoningen van penselen met haren zijn nog niet geïmplementeerd
+	Artboard-specific guides are not implemented	Hulplijnen voor afzonderlijke tekengebieden zijn nog niet geïmplementeerd
