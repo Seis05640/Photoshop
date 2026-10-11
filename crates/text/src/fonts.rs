@@ -268,6 +268,12 @@ impl FontDb {
         std::iter::once(DEFAULT_FAMILY).chain(self.fallbacks.iter().map(String::as_str))
     }
 
+    /// The installed or served families text falls back to for characters its font lacks, in
+    /// order, after the bundled default (Help › System Info).
+    pub fn fallback_families(&self) -> Vec<String> {
+        self.fallbacks.clone()
+    }
+
     /// All family names, sorted.
     pub fn families(&mut self) -> Vec<String> {
         // Private system faces (a leading '.', e.g. macOS ".SF NS") are hidden, as in Photoshop.
