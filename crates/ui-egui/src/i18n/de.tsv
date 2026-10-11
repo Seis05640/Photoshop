@@ -2640,3 +2640,6 @@ cameraData	Lens	Objektiv
 	Emulsion Down	Schichtseite unten
 	Functions	Funktionen
 	Print Resolution:	Druckauflösung:
+	Remove after each stroke	Nach jedem Strich entfernen
+	Apply the removal ({key})	Entfernen anwenden ({key})
+	Strokes to remove: {n} (Enter applies, Esc cancels)	Striche zum Entfernen: {n} (Eingabe wendet an, Esc bricht ab)

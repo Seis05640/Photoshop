@@ -2947,3 +2947,6 @@ cameraData	Lens	Объектив
 	Emulsion Down	Эмульсией вниз
 	Functions	Функции
 	Print Resolution:	Разрешение печати:
+	Remove after each stroke	Удалять после каждого штриха
+	Apply the removal ({key})	Применить удаление ({key})
+	Strokes to remove: {n} (Enter applies, Esc cancels)	Штрихов к удалению: {n} (Enter применяет, Esc отменяет)

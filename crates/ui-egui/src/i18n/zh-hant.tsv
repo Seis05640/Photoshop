@@ -2590,3 +2590,6 @@ cameraData	Lens	鏡頭
 	Emulsion Down	感光乳劑面朝下
 	Functions	功能
 	Print Resolution:	列印解析度：
+	Remove after each stroke	每次描邊後移除
+	Apply the removal ({key})	套用移除 ({key})
+	Strokes to remove: {n} (Enter applies, Esc cancels)	待移除的描邊：{n}（Enter 套用，Esc 取消）

@@ -3700,3 +3700,6 @@ cameraData	Lens	Φακός
 	Emulsion Down	Γαλάκτωμα προς τα κάτω
 	Functions	Λειτουργίες
 	Print Resolution:	Ανάλυση εκτύπωσης:
+	Remove after each stroke	Αφαίρεση μετά από κάθε πινελιά
+	Apply the removal ({key})	Εφαρμογή της αφαίρεσης ({key})
+	Strokes to remove: {n} (Enter applies, Esc cancels)	Πινελιές προς αφαίρεση: {n} (Enter εφαρμόζει, Esc ακυρώνει)

@@ -3614,3 +3614,6 @@ cameraData	Lens	Obiektyw
 	Emulsion Down	Emulsja w dół
 	Functions	Funkcje
 	Print Resolution:	Rozdzielczość druku:
+	Remove after each stroke	Usuwaj po każdym pociągnięciu
+	Apply the removal ({key})	Zastosuj usuwanie ({key})
+	Strokes to remove: {n} (Enter applies, Esc cancels)	Pociągnięcia do usunięcia: {n} (Enter stosuje, Esc anuluje)

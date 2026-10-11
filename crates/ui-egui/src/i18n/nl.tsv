@@ -3762,3 +3762,6 @@ cameraData	Lens	Lens
 	Emulsion Down	Emulsie omlaag
 	Functions	Functies
 	Print Resolution:	Afdrukresolutie:
+	Remove after each stroke	Verwijderen na elke streek
+	Apply the removal ({key})	Verwijdering toepassen ({key})
+	Strokes to remove: {n} (Enter applies, Esc cancels)	Streken om te verwijderen: {n} (Enter past toe, Esc annuleert)

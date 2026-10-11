@@ -2672,3 +2672,6 @@ cameraData	Lens	Obiettivo
 	Emulsion Down	Emulsione sotto
 	Functions	Funzioni
 	Print Resolution:	Risoluzione di stampa:
+	Remove after each stroke	Rimuovi dopo ogni tratto
+	Apply the removal ({key})	Applica la rimozione ({key})
+	Strokes to remove: {n} (Enter applies, Esc cancels)	Tratti da rimuovere: {n} (Invio applica, Esc annulla)

@@ -3185,3 +3185,6 @@ cameraData	Lens	렌즈
 	Emulsion Down	감광면 아래로
 	Functions	기능
 	Print Resolution:	인쇄 해상도:
+	Remove after each stroke	획마다 제거
+	Apply the removal ({key})	제거 적용 ({key})
+	Strokes to remove: {n} (Enter applies, Esc cancels)	제거할 획: {n} (Enter 적용, Esc 취소)

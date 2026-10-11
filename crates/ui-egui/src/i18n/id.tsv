@@ -3005,3 +3005,6 @@ cameraData	Lens	Lensa
 	Emulsion Down	Emulsi di Bawah
 	Functions	Fungsi
 	Print Resolution:	Resolusi Cetak:
+	Remove after each stroke	Hapus setelah setiap goresan
+	Apply the removal ({key})	Terapkan penghapusan ({key})
+	Strokes to remove: {n} (Enter applies, Esc cancels)	Goresan untuk dihapus: {n} (Enter menerapkan, Esc membatalkan)

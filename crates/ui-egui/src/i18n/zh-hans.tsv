@@ -2620,3 +2620,6 @@ cameraData	Lens	镜头
 	Emulsion Down	药膜朝下
 	Functions	功能
 	Print Resolution:	打印分辨率：
+	Remove after each stroke	每次描边后移除
+	Apply the removal ({key})	应用移除 ({key})
+	Strokes to remove: {n} (Enter applies, Esc cancels)	待移除的描边：{n}（Enter 应用，Esc 取消）
