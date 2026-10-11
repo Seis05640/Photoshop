@@ -307,7 +307,7 @@ fn params_contain_ambient_path(id: &str, params: &Value) -> bool {
 }
 
 fn profile_command_may_read_ambient(id: &str, params: &Value) -> bool {
-    if matches!(id, "color.profileMismatch" | "edit.colorSettings" | "view.proofSetup") {
+    if matches!(id, "color.profileMismatch" | "edit.colorSettings" | "edit.installedProfiles" | "view.proofSetup") {
         return true;
     }
     matches!(id, "edit.assignProfile" | "edit.convertToProfile" | "edit.profileInfo")
@@ -646,6 +646,7 @@ mod tests {
             "measurementLog.export",
             "layer.videoLayers.reloadFrame",
             "edit.colorSettings",
+            "edit.installedProfiles",
         ] {
             assert!(authorize_engine_command(id, &serde_json::json!({})).is_err());
         }
@@ -678,6 +679,18 @@ mod tests {
         assert!(session.execute("file.automate.conditionalModeChange", params).is_err());
         assert_eq!(session.active().unwrap().doc.mode, photocraft_engine::doc::ColorMode::Rgb);
         assert!(authorize_desktop_engine_step("file.saveACopy", &serde_json::json!({})).is_err());
+    }
+
+    #[test]
+    fn installed_profiles_cannot_scan_ambient_folders() {
+        for params in [serde_json::json!({}), serde_json::json!({"class": "output", "colorSpace": "cmyk"})] {
+            assert!(authorize_engine_command("edit.installedProfiles", &params).is_err());
+            assert!(authorize_desktop_engine_command("edit.installedProfiles", &params).is_err());
+            let mut headless = crate::Headless::new();
+            let refused = headless.command_run("edit.installedProfiles", params).unwrap_err();
+            assert!(refused.to_string().contains("ambient filesystem paths"), "{refused}");
+        }
+        assert!(authorize_engine_command("edit.profileInfo", &serde_json::json!({"profile": "srgb"})).is_ok(), "built-in profiles need no ambient scan");
     }
 
     #[test]
