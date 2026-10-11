@@ -49,7 +49,7 @@ pub struct PenPath {
     pub(crate) pending_last_handle: Option<photocraft_doc::Path>,
     /// A raw first-anchor press owns the stand-in used by a close-drag.
     #[serde(skip)]
-    closing: bool,
+    pub(crate) closing: bool,
 }
 
 #[derive(Clone, Debug)]
