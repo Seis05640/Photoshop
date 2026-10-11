@@ -1,6 +1,6 @@
 use super::*;
 use egui::accesskit::Role;
-use egui::{Key, Modifiers, PointerButton, Pos2, Rect, Vec2, pos2};
+use egui::{Key, Modifiers, PointerButton, Pos2, Rect, Vec2, pos2, vec2};
 use egui_kittest::{
     Harness,
     kittest::{NodeT, Queryable},
@@ -550,6 +550,35 @@ fn scene_open(h: &mut Harness<'_, CanvasScene>) {
     let opener = h.get_by_role_and_label(Role::Button, "Stroke Options").rect();
     click_at(h, opener.center());
     assert!(h.state().app.ui.stroke_editor.is_some());
+}
+
+#[test]
+fn selected_shape_without_stroke_keeps_nondefault_style_popup_open() {
+    for properties in [false, true] {
+        let mut h = canvas_harness(properties);
+        let app = &mut h.state_mut().app;
+        if !properties {
+            app.run("shape.create", json!({"rect": [20, 20, 80, 60]})).unwrap();
+        }
+        app.run("shape.edit", json!({"stroke": null})).unwrap();
+        app.ui.tool_options.shape_stroke.preset("Dotted");
+        let original = app.session.active().unwrap().doc.clone();
+        let history = app.session.active().unwrap().history.past_len();
+        h.run_steps(3);
+        scene_open(&mut h);
+        h.run_steps(4);
+        assert_eq!(h.state().app.ui.stroke_editor.as_ref().unwrap().original, h.state().app.ui.tool_options.shape_stroke);
+        assert_eq!(h.state().app.session.active().unwrap().doc, original);
+        assert_eq!(h.state().app.session.active().unwrap().history.past_len(), history);
+        h.get_by_role_and_label(Role::RadioButton, "Dashed").click();
+        h.run_steps(4);
+        assert!(h.state().app.ui.stroke_editor.is_some());
+        let st = h.state().app.session.active().unwrap();
+        let photocraft_doc::LayerContent::Shape(shape) = &st.doc.layer(st.active_layer.unwrap()).unwrap().content else { panic!("not a shape") };
+        assert_eq!(shape.stroke.as_ref().unwrap().dashes, [4.0, 2.0]);
+        assert!(shape.stroke.as_ref().unwrap().width > 0.0);
+        assert_eq!(st.history.past_len(), history + 1);
+    }
 }
 
 fn canvas_press(h: &mut Harness<'_, CanvasScene>, pos: Pos2, pressed: bool) {
