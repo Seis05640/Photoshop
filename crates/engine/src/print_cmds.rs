@@ -4,8 +4,12 @@
 //! scale, colour handling with printer profile / intent / black-point compensation, corner and
 //! centre crop marks, registration marks, description and label) with a small PDF writer
 //! (ISO 32000: one page, a Flate-compressed image XObject, vector marks, Helvetica text), then
-//! hands it to the system spooler with `lp` (CUPS, macOS and Linux). `"dryRun": true` stops
-//! before spooling and reports the command line, which is how the tests exercise the path.
+//! hands it to the print server over IPP (CUPS on Linux and macOS, in-process: no `lp` binary
+//! needed, so it works in a Flatpak with `--socket=cups`), or to the spooler the app installed
+//! (the XDG Print portal in a sandbox without CUPS). The printer is resolved first: the one asked
+//! for, else the default, else the only one, else an error naming the choices. `"dryRun": true`
+//! stops before spooling and reports the equivalent `lp` command line, which is how the tests
+//! exercise the layout.
 //!
 //! Paths to Illustrator writes the document's paths as an Adobe Illustrator 3 compatible
 //! PostScript file (`m`/`L`/`C` path construction, `n`/`N` unpainted closed/open paths, `*u`/`*U`
@@ -24,6 +28,49 @@ use crate::{EngineError, Result, Session};
 fn bad(cmd: &str, msg: impl Into<String>) -> EngineError {
     EngineError::BadParams { cmd: cmd.into(), msg: msg.into() }
 }
+/// A rendered page on its way to the printer.
+#[derive(Debug, Clone)]
+pub struct PrintJob {
+    /// The page, also written to `pdf_path` (a temp file, unless "output" named one).
+    pub pdf: Vec<u8>,
+    pub pdf_path: String,
+    /// The printer asked for; `None` means the default.
+    pub printer: Option<String>,
+    pub copies: u32,
+    /// The queue entry's name: the document's.
+    pub title: String,
+    /// A print server named in the request (`printServer`), else the system's.
+    pub server: Option<String>,
+    /// The page size in points, as laid out (landscape already applied).
+    pub paper: (f64, f64),
+    pub landscape: bool,
+}
+
+/// A spooler's work: the job in, where it went out.
+pub type SpoolFn = std::sync::Arc<dyn Fn(&PrintJob) -> std::result::Result<String, String> + Send + Sync>;
+
+/// A second route to the printer, installed by the app on `Session::print_spooler`: the XDG
+/// Print portal, which shows the system print dialog from inside a sandbox. It takes the jobs
+/// the built-in CUPS client has no route for (no print server reachable, no printer set up),
+/// or every job when `preferred`.
+#[derive(Clone)]
+pub struct Spooler {
+    /// Reported as the job's `backend`.
+    pub name: &'static str,
+    pub preferred: bool,
+    /// Returns where the job went ("the system print dialog").
+    pub run: SpoolFn,
+}
+
+/// Why the built-in client could not spool: no route at all (the app's spooler may have one),
+/// or a failure on a route that exists (a wrong printer name, a rejected job).
+// The web and Windows stubs only ever report a missing route.
+#[cfg_attr(any(target_arch = "wasm32", target_os = "windows"), allow(dead_code))]
+enum SpoolError {
+    NoRoute(String),
+    Failed(String),
+}
+
 fn other(e: impl std::fmt::Display) -> EngineError {
     EngineError::Other(e.to_string())
 }
@@ -351,10 +398,11 @@ fn do_print(s: &mut Session, p: &Value, cmd: &str) -> Result<Value> {
             join(&tmp, &format!("{}-print-{}-{n}.pdf", crate::file_cmds::sanitize(&stem(&doc.name)), std::process::id()))
         }
     };
-    let copies = crate::commands::int(p, "copies").unwrap_or(1).clamp(1, 999);
+    let copies = crate::commands::int(p, "copies").unwrap_or(1).clamp(1, 999) as u32;
     let dry = p.get("dryRun").and_then(Value::as_bool).unwrap_or(false);
     let pdf = print_pdf(&page);
     write_file(&pdf_path, &pdf)?;
+    let pdf_len = pdf.len();
     let mut argv: Vec<String> = vec!["lp".into()];
     if let Some(pr) = p.get("printer").and_then(Value::as_str).filter(|v| !v.is_empty()) {
         argv.extend(["-d".into(), pr.to_string()]);
@@ -365,14 +413,32 @@ fn do_print(s: &mut Session, p: &Value, cmd: &str) -> Result<Value> {
     argv.extend(["-t".into(), doc.name.clone(), pdf_path.clone()]);
     let mut sent = false;
     let mut spool = Value::Null;
+    let mut backend = Value::Null;
     if send && !dry {
-        spool = json!(spool_pdf(&argv)?);
+        let job = PrintJob {
+            pdf,
+            pdf_path: pdf_path.clone(),
+            printer: p.get("printer").and_then(Value::as_str).filter(|v| !v.is_empty()).map(str::to_string),
+            copies,
+            title: doc.name.clone(),
+            server: p.get("printServer").and_then(Value::as_str).filter(|v| !v.is_empty()).map(str::to_string),
+            paper: (pw, ph),
+            landscape: p.get("orientation").and_then(Value::as_str) == Some("landscape"),
+        };
+        let result = spool_job(s.print_spooler.as_ref(), &job);
+        // The spool file has served (or failed) its purpose; only a requested "output" stays.
+        if output.is_none() {
+            let _ = std::fs::remove_file(&pdf_path);
+        }
+        let (where_, via) = result?;
+        spool = json!(where_);
+        backend = json!(via);
         sent = true;
     }
     remember_print(s, p);
     crate::automate_cmds::fire_event(s, "print");
     Ok(
-        json!({"pdf": pdf_path, "bytes": pdf.len(), "paper": [pw, ph], "imageRect": [x, y, w, h], "emulsionDown": emulsion_down, "scale": scale * 100.0, "copies": copies, "command": if send { json!(argv) } else { Value::Null }, "sent": sent, "spooler": spool, "color": color}),
+        json!({"pdf": if sent && output.is_none() { Value::Null } else { json!(pdf_path) }, "bytes": pdf_len, "paper": [pw, ph], "imageRect": [x, y, w, h], "emulsionDown": emulsion_down, "scale": scale * 100.0, "copies": copies, "command": if send { json!(argv) } else { Value::Null }, "sent": sent, "spooler": spool, "backend": backend, "color": color}),
     )
 }
 
@@ -386,17 +452,114 @@ fn remember_print(s: &mut Session, p: &Value) {
     s.file_menu.last_print = Some(remembered);
 }
 
-#[cfg(not(target_arch = "wasm32"))]
-fn spool_pdf(argv: &[String]) -> Result<String> {
-    let out = std::process::Command::new(&argv[0]).args(&argv[1..]).output().map_err(|e| other(format!("could not run `lp` (CUPS): {e}")))?;
-    if !out.status.success() {
-        return Err(other(format!("lp failed: {}", String::from_utf8_lossy(&out.stderr).trim())));
+/// Sends the job: the app's spooler when it is preferred, else the built-in CUPS client, else
+/// the app's spooler when the client had no route. Returns where it went and the backend.
+fn spool_job(spooler: Option<&Spooler>, job: &PrintJob) -> Result<(String, String)> {
+    let app = |sp: &Spooler| (sp.run)(job).map(|m| (m, sp.name.to_string())).map_err(other);
+    // A print server named in the request asks for the CUPS route.
+    if let Some(sp) = spooler.filter(|sp| sp.preferred && job.server.is_none()) {
+        return app(sp);
     }
-    Ok(String::from_utf8_lossy(&out.stdout).trim().to_string())
+    match cups_spool(job) {
+        Ok(m) => Ok((m, "cups".into())),
+        Err(SpoolError::NoRoute(why)) => match spooler {
+            Some(sp) => app(sp),
+            None => Err(other(why)),
+        },
+        Err(SpoolError::Failed(why)) => Err(other(why)),
+    }
 }
+
+/// The printer a job goes to: the one asked for when the server knows it, else the default,
+/// else the only one; otherwise an error that names what there is.
+#[cfg(all(not(target_arch = "wasm32"), not(target_os = "windows")))]
+fn resolve_printer(requested: Option<&str>, default: Option<&str>, printers: &[photocraft_ipp::Printer]) -> std::result::Result<String, SpoolError> {
+    let names: Vec<&str> = printers.iter().map(|p| p.name.as_str()).collect();
+    let known = |n: &str| names.iter().find(|k| k.eq_ignore_ascii_case(n)).map(|k| (*k).to_string());
+    if let Some(r) = requested {
+        let choices = if names.is_empty() { "none".to_string() } else { names.join(", ") };
+        return known(r).ok_or_else(|| SpoolError::Failed(format!("no printer called `{r}`; the print server knows: {choices}")));
+    }
+    if printers.is_empty() {
+        return Err(SpoolError::NoRoute("no printer is set up on this computer; add one in the system settings, or print to PDF".into()));
+    }
+    if let Some(d) = default.and_then(known) {
+        return Ok(d);
+    }
+    match names.as_slice() {
+        [only] => Ok((*only).to_string()),
+        _ => Err(SpoolError::Failed(format!("no default printer; choose one in the Printer field: {}", names.join(", ")))),
+    }
+}
+
+#[cfg(all(not(target_arch = "wasm32"), not(target_os = "windows")))]
+fn cups_server(named: Option<&str>) -> std::result::Result<photocraft_ipp::Endpoint, SpoolError> {
+    match named {
+        Some(server) => {
+            let ep = photocraft_ipp::Endpoint::parse(server);
+            if !ep.reachable() {
+                return Err(SpoolError::Failed(format!("no print server at {ep}")));
+            }
+            Ok(ep)
+        }
+        None => photocraft_ipp::Endpoint::detect()
+            .ok_or_else(|| SpoolError::NoRoute("no print server: CUPS is not running, or not reachable from this sandbox; print to PDF instead".into())),
+    }
+}
+
+#[cfg(all(not(target_arch = "wasm32"), not(target_os = "windows")))]
+fn cups_spool(job: &PrintJob) -> std::result::Result<String, SpoolError> {
+    let failed = |e: photocraft_ipp::Error| SpoolError::Failed(e.to_string());
+    let ep = cups_server(job.server.as_deref())?;
+    let printers = photocraft_ipp::printers(&ep).map_err(failed)?;
+    let default = printers.iter().find(|p| p.is_default).map(|p| p.name.clone());
+    let printer = resolve_printer(job.printer.as_deref(), default.as_deref(), &printers)?;
+    let is_class = printers.iter().any(|p| p.name == printer && p.is_class);
+    let user = std::env::var("USER").or_else(|_| std::env::var("USERNAME")).unwrap_or_else(|_| "photocraft".into());
+    let id = photocraft_ipp::print_job(
+        &ep,
+        &photocraft_ipp::Job { printer: &printer, is_class, title: &job.title, user: &user, copies: job.copies, document: &job.pdf, format: "application/pdf" },
+    )
+    .map_err(failed)?;
+    Ok(format!("job {id} on {printer}"))
+}
+
+#[cfg(target_os = "windows")]
+fn cups_spool(_: &PrintJob) -> std::result::Result<String, SpoolError> {
+    Err(SpoolError::NoRoute("printing to a Windows printer is not available in this build yet; print to PDF instead".into()))
+}
+
 #[cfg(target_arch = "wasm32")]
-fn spool_pdf(_: &[String]) -> Result<String> {
-    Err(other("printing needs the desktop app"))
+fn cups_spool(_: &PrintJob) -> std::result::Result<String, SpoolError> {
+    Err(SpoolError::NoRoute("printing needs the desktop app".into()))
+}
+
+/// The printers the system's (or `printServer`'s) print server knows, with the default.
+fn printers(_s: &mut Session, p: &Value) -> Result<Value> {
+    let named = p.get("printServer").and_then(Value::as_str).filter(|v| !v.is_empty());
+    #[cfg(all(not(target_arch = "wasm32"), not(target_os = "windows")))]
+    {
+        let ep = match cups_server(named) {
+            Ok(ep) => ep,
+            Err(SpoolError::NoRoute(why) | SpoolError::Failed(why)) => {
+                return Ok(json!({"server": Value::Null, "default": Value::Null, "printers": [], "note": why}));
+            }
+        };
+        let list = photocraft_ipp::printers(&ep).map_err(other)?;
+        let default = list.iter().find(|p| p.is_default).map(|p| p.name.clone());
+        let printers: Vec<Value> = list
+            .iter()
+            .map(|p| {
+                json!({"name": p.name, "info": p.info, "state": match p.state { 4 => "printing", 5 => "stopped", _ => "idle" }, "acceptingJobs": p.accepting_jobs, "default": p.is_default, "class": p.is_class})
+            })
+            .collect();
+        Ok(json!({"server": ep.to_string(), "default": default, "printers": printers}))
+    }
+    #[cfg(not(all(not(target_arch = "wasm32"), not(target_os = "windows"))))]
+    {
+        let _ = named;
+        Ok(json!({"server": Value::Null, "default": Value::Null, "printers": [], "note": "listing printers is not available on this platform yet"}))
+    }
 }
 
 fn print(s: &mut Session, p: &Value) -> Result<Value> {
@@ -567,9 +730,20 @@ pub fn specs() -> Vec<CommandSpec> {
             CommandSpec { id: $id, label: $label, menu: $menu, shortcut: $sc, params: $params, enabled: $enabled, journal: true, run: $run }
         };
     }
-    const PRINT_PARAMS: &str = r##"{"printer":name? (default printer),"copies":1..999=1,"paper":"letter|legal|tabloid|a3|a4|a5|4x6|5x7"|[w,h] pt="letter","orientation":"portrait|landscape"="portrait","center":bool=true,"top":in?,"left":in?,"scale":%=100,"scaleToFit":bool=false,"colorHandling":"printerManages|photocraftManages|noColorManagement"="printerManages","printerProfile":profile? (photocraftManages),"intent":"perceptual|relative|saturation|absolute"="relative","bpc":bool=true,"cornerCropMarks":bool,"centerCropMarks":bool,"registrationMarks":bool,"description":bool,"labels":bool,"emulsionDown":bool=false (mirror the page left to right, for sublimation and other transfer printing),"output":pdf path? (print to PDF; then "send" defaults to false),"send":bool?,"dryRun":bool=false (render the PDF, report the lp command, don't spool)} → {pdf, imageRect, command, sent}"##;
+    const PRINT_PARAMS: &str = r##"{"printer":name? (default printer),"copies":1..999=1,"paper":"letter|legal|tabloid|a3|a4|a5|4x6|5x7"|[w,h] pt="letter","orientation":"portrait|landscape"="portrait","center":bool=true,"top":in?,"left":in?,"scale":%=100,"scaleToFit":bool=false,"colorHandling":"printerManages|photocraftManages|noColorManagement"="printerManages","printerProfile":profile? (photocraftManages),"intent":"perceptual|relative|saturation|absolute"="relative","bpc":bool=true,"cornerCropMarks":bool,"centerCropMarks":bool,"registrationMarks":bool,"description":bool,"labels":bool,"emulsionDown":bool=false (mirror the page left to right, for sublimation and other transfer printing),"output":pdf path? (print to PDF; then "send" defaults to false),"send":bool?,"printServer":"host[:port]|socket path"? (default: the system's CUPS),"dryRun":bool=false (render the PDF, report the job, don't spool)} → {pdf, imageRect, command, sent, spooler, backend}"##;
     vec![
         spec!("file.print", "Print…", &["File"], Some("Cmd+P"), PRINT_PARAMS, native_doc, print),
+        // A query: not journaled.
+        CommandSpec {
+            id: "file.print.printers",
+            label: "Printers",
+            menu: &[],
+            shortcut: None,
+            params: r##"{"printServer":"host[:port]|socket path"? (default: the system's CUPS)} → {server, default, printers: [{name, info, state, acceptingJobs, default, class}], note?}"##,
+            enabled: |_| Ok(()),
+            journal: false,
+            run: printers,
+        },
         spec!(
             "file.printOneCopy",
             "Print One Copy",

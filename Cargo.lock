@@ -4360,6 +4360,7 @@ dependencies = [
  "photocraft-format",
  "photocraft-geom",
  "photocraft-io",
+ "photocraft-ipp",
  "photocraft-ops",
  "photocraft-paint",
  "photocraft-plugins",
@@ -4454,6 +4455,10 @@ dependencies = [
  "serde_json",
  "thiserror 2.0.21",
 ]
+
+[[package]]
+name = "photocraft-ipp"
+version = "0.7.0"
 
 [[package]]
 name = "photocraft-ops"
