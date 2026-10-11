@@ -208,6 +208,11 @@ pub struct DocState {
     /// A floating selection (`select.float`): the cut piece and where it floats, until dropped
     /// (view state: the document is unchanged until `select.drop`).
     pub floating: Option<float_cmds::Floating>,
+    /// History panel snapshots, oldest first (`history.newSnapshot`, #2966). Kept for the
+    /// session only, as in Photoshop: not history states, and not saved with the document.
+    pub snapshots: Vec<history_cmds::Snapshot>,
+    /// The id the next snapshot gets; ids are never reused, so deleting one keeps the others.
+    next_snapshot: u64,
 }
 
 impl DocState {
@@ -233,6 +238,8 @@ impl DocState {
             fx_collapsed: Vec::new(),
             show_only: None,
             floating: None,
+            snapshots: Vec::new(),
+            next_snapshot: 1,
         }
     }
     /// The selected layers in bottom-to-top document order, always including the active layer.
