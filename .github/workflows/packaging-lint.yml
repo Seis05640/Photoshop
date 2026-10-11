@@ -37,6 +37,8 @@ jobs:
         run: shellcheck packaging/*.sh packaging/*/*.sh packaging/linux/AppRun
       - name: AppImage AppRun desktop integration
         run: bash packaging/linux/apprun-test.sh
+      - name: AppImage bundled CLI and MCP entry point
+        run: bash packaging/linux/apprun-cli-test.sh
       - name: PowerShell
         shell: pwsh
         run: |
