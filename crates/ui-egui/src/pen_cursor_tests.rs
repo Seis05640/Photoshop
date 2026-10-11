@@ -140,9 +140,16 @@ fn failed_close_keeps_the_close_cursor_with_the_preserved_draft() {
     app.ui.pen.as_mut().unwrap().knots[1][0] = [1e40, 40.0];
     let history = app.session.active().unwrap().history.past_len();
     pen_down(&mut app, 40.0, 40.0);
+    pen_up(&mut app);
     assert!(app.ui.pen.as_ref().unwrap().commit_failed);
+    assert_eq!(app.ui.pen.as_ref().unwrap().knots.len(), 2, "a failed close keeps real anchors without its stand-in");
     assert_eq!(pen_cursor(&app, [40.0, 40.0]), PenCursor::Close);
     assert_eq!(app.session.active().unwrap().history.past_len(), history);
+    app.ui.pen.as_mut().unwrap().knots[1] = [[120.0, 40.0]; 3];
+    anchor(&mut app, [40.0, 40.0]);
+    assert!(app.ui.pen.is_none());
+    assert_eq!(app.session.active().unwrap().doc.work_path.as_ref().unwrap().subpaths[0].knots.len(), 2);
+    assert_eq!(app.session.active().unwrap().history.past_len(), history + 1);
 }
 
 #[test]

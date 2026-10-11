@@ -454,6 +454,100 @@ fn grid_conversion_keeps_raw_geometry_after_alt_release() {
 }
 
 #[test]
+fn grid_snapping_onto_the_first_anchor_does_not_start_a_close_drag() {
+    let mut app = app();
+    app.ui.tool_options.pen_auto_add_delete = false;
+    for p in [[50.0, 50.0], [125.0, 50.0], [125.0, 125.0]] {
+        click(&mut app, p, Modifiers::NONE);
+    }
+    grid(&mut app);
+    let n = steps(&app);
+    let outside = [56.0, 50.0];
+    assert_eq!(cursor(&app, outside, Modifiers::NONE), PenCursor::Draw);
+    click(&mut app, outside, Modifiers::NONE);
+    let pen = app.ui.pen.as_ref().expect("a raw miss must draw even when snapped onto the first anchor");
+    assert_eq!(pen.knots.len(), 4);
+    assert_eq!(pen.knots[3][0], pen.knots[0][0]);
+    assert!(!super::super::closing(pen));
+    assert!(app.session.active().unwrap().doc.work_path.is_none());
+    assert_eq!(steps(&app), n);
+}
+
+#[test]
+fn undo_during_a_close_drag_keeps_prior_draft_edit_history_and_ignores_late_events() {
+    let mut app = app();
+    draft(&mut app);
+    let original = app.ui.pen.as_ref().unwrap().knots.clone();
+    click(&mut app, [80.0, 40.0], Modifiers::NONE);
+    let added = app.ui.pen.as_ref().unwrap().knots.clone();
+    let n = steps(&app);
+    event(&mut app, [40.0, 40.0], "down", Modifiers::NONE);
+    event(&mut app, [60.0, 20.0], "move", Modifiers::NONE);
+    assert!(super::super::closing(app.ui.pen.as_ref().unwrap()));
+    assert!(super::super::pen_undo_last_point(&mut app));
+    assert_eq!(app.ui.pen.as_ref().unwrap().knots, added);
+    event(&mut app, [70.0, 10.0], "move", Modifiers::ALT);
+    event(&mut app, [70.0, 10.0], "up", Modifiers::NONE);
+    assert_eq!(app.ui.pen.as_ref().unwrap().knots, added);
+    assert!(super::super::pen_undo_last_point(&mut app));
+    assert_eq!(app.ui.pen.as_ref().unwrap().knots, original);
+    assert!(app.session.active().unwrap().doc.work_path.is_none());
+    assert_eq!(steps(&app), n);
+}
+
+#[test]
+fn finishing_a_close_drag_as_a_shape_keeps_its_fill_and_commits_once() {
+    let mut app = app();
+    app.ui.tool_options.vector_mode = "shape".into();
+    app.ui.tool_options.shape_fill = true;
+    draft(&mut app);
+    let n = steps(&app);
+    event(&mut app, [40.0, 40.0], "down", Modifiers::NONE);
+    event(&mut app, [60.0, 20.0], "move", Modifiers::NONE);
+    super::super::pen_commit(&mut app, false);
+    event(&mut app, [60.0, 20.0], "up", Modifiers::NONE);
+    assert!(app.ui.pen.is_none());
+    let st = app.session.active().unwrap();
+    let layer = st.doc.layer(st.active_layer.unwrap()).unwrap();
+    let photocraft_doc::LayerContent::Shape(shape) = &layer.content else { panic!("expected a shape") };
+    assert!(shape.fill.is_some());
+    assert!(shape.path.subpaths[0].closed);
+    assert_eq!(shape.path.subpaths[0].knots.len(), 3);
+    assert_eq!(shape.path.subpaths[0].knots[0].out_ctrl, Point::new(60.0, 20.0));
+    assert_eq!(steps(&app), n + 1);
+}
+
+#[test]
+fn failed_commit_during_a_close_drag_preserves_the_folded_draft_after_late_events() {
+    let mut app = app();
+    draft(&mut app);
+    click(&mut app, [80.0, 40.0], Modifiers::NONE);
+    app.ui.pen.as_mut().unwrap().knots[2][0] = [1e40, 40.0];
+    let n = steps(&app);
+    let undo = app.ui.pen.as_ref().unwrap().edit_undo.clone();
+    let owner = app.ui.pen.as_ref().unwrap().owner.clone();
+    event(&mut app, [40.0, 40.0], "down", Modifiers::NONE);
+    event(&mut app, [60.0, 20.0], "move", Modifiers::NONE);
+    let expected = super::super::fold_close(app.ui.pen.as_ref().unwrap()).unwrap().knots;
+    super::super::pen_commit(&mut app, false);
+    let pen = app.ui.pen.as_ref().expect("failed close must preserve its draft");
+    assert!(pen.commit_failed);
+    assert!(!pen.dragging && !pen.adjusting_last && !super::super::closing(pen));
+    assert_eq!(pen.knots, expected);
+    event(&mut app, [90.0, 10.0], "move", Modifiers::ALT);
+    event(&mut app, [90.0, 10.0], "up", Modifiers::NONE);
+    let pen = app.ui.pen.as_ref().unwrap();
+    assert_eq!(pen.knots, expected);
+    assert_eq!(pen.knots.len(), 4);
+    assert_eq!(pen.owner, owner);
+    assert_eq!(pen.edit_undo, undo);
+    assert!(pen.owner.as_ref().unwrap().valid(&app));
+    assert!(pen.pending_last_handle.is_none() && pen.edit.is_none());
+    assert!(app.session.active().unwrap().doc.work_path.is_none());
+    assert_eq!(steps(&app), n);
+}
+
+#[test]
 fn undo_during_a_draft_conversion_cannot_be_reversed_by_its_old_release() {
     let mut app = app();
     draft(&mut app);
