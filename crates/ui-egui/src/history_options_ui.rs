@@ -96,10 +96,7 @@ mod tests {
     /// The five checkboxes with Photoshop's labels, top to bottom in its dialog's order.
     #[test]
     fn the_dialog_draws_the_checkboxes_in_photoshops_order() {
-        use egui_kittest::{
-            Harness,
-            kittest::{NodeT, Queryable},
-        };
+        use egui_kittest::{Harness, kittest::Queryable};
         let mut h = Harness::builder().with_size(egui::vec2(700.0, 400.0)).build_ui_state(|ui, app| crate::dialogs::show(app, ui.ctx()), app());
         PhotocraftApp::setup_context(&h.ctx, crate::theme::ThemeKind::ALL[0]);
         open(h.state_mut());
@@ -112,7 +109,7 @@ mod tests {
             "Show New Snapshot Dialog by Default",
             "Make Layer Visibility Changes Undoable",
         ];
-        let tops: Vec<f64> = labels.iter().map(|l| h.get_by_label(l).rect().min.y).collect();
+        let tops: Vec<f32> = labels.iter().map(|l| h.get_by_label(l).rect().min.y).collect();
         assert!(tops.windows(2).all(|w| w[0] < w[1]), "top to bottom: {tops:?}");
         h.get_by_label("OK");
         h.get_by_label("Cancel");

@@ -849,7 +849,8 @@ pub fn form_body(ui: &mut egui::Ui, f: &mut Map<String, Value>) {
     let label = |k: &str| labels.get(k).and_then(Value::as_str).map_or_else(|| label_of(k), str::to_string);
     // `__order` lists the fields in the dialog's order (the map itself is sorted by key); fields
     // it leaves out follow in key order.
-    let order: Vec<String> = f.get("__order").and_then(Value::as_array).map(|a| a.iter().filter_map(Value::as_str).map(str::to_string).collect()).unwrap_or_default();
+    let order: Vec<String> =
+        f.get("__order").and_then(Value::as_array).map(|a| a.iter().filter_map(Value::as_str).map(str::to_string).collect()).unwrap_or_default();
     let mut keys: Vec<String> = order.iter().filter(|k| !k.starts_with("__") && f.contains_key(k.as_str())).cloned().collect();
     keys.extend(f.keys().filter(|k| !k.starts_with("__") && !order.contains(k)).cloned());
     egui::Grid::new("form-dialog").num_columns(2).spacing([12.0, 6.0]).show(ui, |ui| {
