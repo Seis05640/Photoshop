@@ -1510,6 +1510,7 @@
 	White Balance: As Shot	Equilíbrio de branco: como fotografado
 	Whites	Brancos
 	Width	Largura
+	Slant	Inclinação
 	Width:	Largura:
 	Work Path	Demarcador de trabalho
 	Yellow	Amarelo
@@ -3779,7 +3780,6 @@ layerLabel	No Color	Sem cor
 	From:	De:
 	Full Document	Documento inteiro
 	Merged Layers	Camadas mescladas
-
 
 # History panel › History Options… (#2966)
 	History Options…	Opções do histórico…
