@@ -1,3 +1,4 @@
+#[cfg(not(target_arch = "wasm32"))]
 use hayro::{RenderCache, RenderSettings, hayro_interpret::InterpreterSettings, hayro_syntax::Pdf};
 use photocraft_doc::{Artboard, ColorMode, Document, Group, Layer, LayerContent, PixelFormat, Rect, SampleType, Size, Surface};
 use photocraft_io::{ExportOptions, XmpEmbed, export, import};
@@ -22,6 +23,7 @@ fn document() -> Document {
 }
 
 #[test]
+#[cfg(not(target_arch = "wasm32"))]
 fn selected_pdf_pages_skip_unselected_pages_and_preserve_page_number() {
     let bytes = export(&document(), "pdf", &ExportOptions::default()).unwrap().bytes;
     let ctl = photocraft_raster::Interrupt::default();
@@ -40,6 +42,7 @@ fn selected_pdf_pages_skip_unselected_pages_and_preserve_page_number() {
 }
 
 #[test]
+#[cfg(not(target_arch = "wasm32"))]
 fn pdf_all_pages_order_color_size_and_magic_round_trip() {
     let output = export(&document(), "pdf", &ExportOptions::default()).unwrap();
     let parsed = Pdf::new(Arc::new(output.bytes.clone())).unwrap();
@@ -80,6 +83,7 @@ fn pdf_malformed_and_oversized_fail_without_panicking() {
 }
 
 #[test]
+#[cfg(not(target_arch = "wasm32"))]
 fn pdf_cancelled_import_stops() {
     let bytes = export(&document(), "pdf", &ExportOptions::default()).unwrap().bytes;
     let ctl = photocraft_raster::Interrupt::cancel_only(&|| true);
@@ -110,14 +114,18 @@ fn pdf_all_depths_transparency_and_metadata_control() {
         assert!(String::from_utf8_lossy(&output.bytes).contains("PDF-test-marker"));
         let output = export(&doc, "pdf", &ExportOptions { xmp: XmpEmbed::None, ..Default::default() }).unwrap();
         assert!(!String::from_utf8_lossy(&output.bytes).contains("PDF-test-marker"));
-        let pdf = Pdf::new(Arc::new(output.bytes)).unwrap();
-        let pixels = hayro::render(&pdf.pages()[0], &RenderCache::new(), &InterpreterSettings::default(), &RenderSettings::default());
-        let pixel = &pixels.data_as_u8_slice()[0..4];
-        assert!(pixel[0] < 3 && (125..=131).contains(&pixel[1]) && pixel[2] < 3 && (125..=131).contains(&pixel[3]), "{depth:?}: {pixel:?}");
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            let pdf = Pdf::new(Arc::new(output.bytes)).unwrap();
+            let pixels = hayro::render(&pdf.pages()[0], &RenderCache::new(), &InterpreterSettings::default(), &RenderSettings::default());
+            let pixel = &pixels.data_as_u8_slice()[0..4];
+            assert!(pixel[0] < 3 && (125..=131).contains(&pixel[1]) && pixel[2] < 3 && (125..=131).contains(&pixel[3]), "{depth:?}: {pixel:?}");
+        }
     }
 }
 
 /// Tiny valid PDF container; dimensions/compression belong to the image, not the page.
+#[cfg(not(target_arch = "wasm32"))]
 fn image_fixture(width: u32, height: u32, filter: &str, data: &[u8]) -> Vec<u8> {
     let stream = |dict: &str, data: &[u8]| {
         let mut out = format!("<< {dict} /Length {} >>\nstream\n", data.len()).into_bytes();
@@ -150,6 +158,7 @@ fn image_fixture(width: u32, height: u32, filter: &str, data: &[u8]) -> Vec<u8> 
 }
 
 #[test]
+#[cfg(not(target_arch = "wasm32"))]
 fn oversized_embedded_images_and_unbounded_codecs_fail_before_rendering() {
     // A one-point page may hide a huge image, and codec headers can contradict its dictionary.
     for (w, h, filter, data, expected) in [
@@ -173,6 +182,7 @@ fn oversized_embedded_images_and_unbounded_codecs_fail_before_rendering() {
 }
 
 #[test]
+#[cfg(not(target_arch = "wasm32"))]
 fn pdf_inflation_budget_and_cancellation_are_checked_inside_streams() {
     use std::{
         io::Write,
@@ -192,6 +202,7 @@ fn pdf_inflation_budget_and_cancellation_are_checked_inside_streams() {
 }
 
 #[test]
+#[cfg(not(target_arch = "wasm32"))]
 fn pdf_resolution_validation_and_physical_size() {
     use photocraft_io::pdf::{ImportOptions, import_pdf_pages_with};
     let bytes = export(&document(), "pdf", &ExportOptions::default()).unwrap().bytes;
@@ -209,6 +220,7 @@ fn pdf_resolution_validation_and_physical_size() {
 }
 
 #[test]
+#[cfg(not(target_arch = "wasm32"))]
 fn pdf_import_renders_vector_shapes_and_text_without_raster_images() {
     let content = b"1 0 0 rg 0 0 18 36 re f 0 0 0 rg BT /F1 12 Tf 24 12 Td (PDF) Tj ET";
     let objects = [

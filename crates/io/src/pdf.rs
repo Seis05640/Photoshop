@@ -1,16 +1,25 @@
 //! PDF pages become raster artboards at the selected resolution (default 144 ppi). PDF export writes lossless, colour-managed
 //! raster pages, in Layers-panel order, retaining physical size and transparency.
 use std::io::Write;
+#[cfg(not(target_arch = "wasm32"))]
 use std::panic::{AssertUnwindSafe, catch_unwind};
 use std::sync::Arc;
 
 use flate2::{Compression, write::ZlibEncoder};
+#[cfg(not(target_arch = "wasm32"))]
 use hayro::{RenderCache, RenderSettings, hayro_interpret::InterpreterSettings, hayro_syntax::Pdf};
 use photocraft_cms::{Builtin, ColorSpace, Intent, Profile, Transform};
-use photocraft_color::{ColorMode, PixelFormat, SampleType};
-use photocraft_doc::{Artboard, Document, Group, Layer, LayerContent};
+use photocraft_color::ColorMode;
+#[cfg(not(target_arch = "wasm32"))]
+use photocraft_color::{PixelFormat, SampleType};
+use photocraft_doc::Document;
+#[cfg(not(target_arch = "wasm32"))]
+use photocraft_doc::{Artboard, Group, Layer, LayerContent};
+#[cfg(not(target_arch = "wasm32"))]
 use photocraft_geom::{Rect, Size};
-use photocraft_raster::{Interrupt, Surface};
+use photocraft_raster::Interrupt;
+#[cfg(not(target_arch = "wasm32"))]
+use photocraft_raster::Surface;
 
 use crate::{ExportOptions, ExportResult, ImportResult, IoError, XmpEmbed};
 
@@ -21,6 +30,7 @@ const MAX_PIXELS: u64 = 64_000_000;
 const MAX_TOTAL_PIXELS: u64 = 512_000_000;
 
 #[path = "pdf_guard.rs"]
+#[cfg(not(target_arch = "wasm32"))]
 mod guard;
 
 /// Raster resolution selected in the PDF open dialog (pixels per inch).
@@ -47,13 +57,9 @@ impl ImportOptions {
 // Hayro can panic or abort on malformed inputs. WebAssembly cannot unwind, and
 // its shared editor instance has no isolated renderer with a hard memory budget.
 // Reject before parsing, including the picker/preview paths; export remains available.
-fn require_native_import() -> Result<(), IoError> {
-    if cfg!(target_arch = "wasm32") {
-        return Err(error(
-            "PDF import is available in the desktop app. This web editor cannot safely isolate the PDF renderer; existing documents are unchanged.",
-        ));
-    }
-    Ok(())
+#[cfg(target_arch = "wasm32")]
+fn require_native_import<T>() -> Result<T, IoError> {
+    Err(error("PDF import is available in the desktop app. This web editor cannot safely isolate the PDF renderer; existing documents are unchanged."))
 }
 
 fn error(message: impl ToString) -> IoError {
@@ -78,8 +84,8 @@ pub fn import_pdf_pages(name: &str, bytes: &[u8], selected: Option<&[usize]>, ct
     import_pdf_pages_with(name, bytes, selected, ImportOptions::default(), ctl)
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 pub fn import_pdf_pages_with(name: &str, bytes: &[u8], selected: Option<&[usize]>, options: ImportOptions, ctl: &Interrupt) -> Result<ImportResult, IoError> {
-    require_native_import()?;
     options.validate()?;
     ctl.check().map_err(|_| IoError::Cancelled)?;
     if bytes.len() > 256 * 1024 * 1024 {
@@ -90,11 +96,12 @@ pub fn import_pdf_pages_with(name: &str, bytes: &[u8], selected: Option<&[usize]
 }
 
 /// Read page sizes without rasterizing any page.
+#[cfg(not(target_arch = "wasm32"))]
 pub fn page_sizes(bytes: &[u8]) -> Result<Vec<(f32, f32)>, IoError> {
-    require_native_import()?;
     catch_unwind(AssertUnwindSafe(|| page_sizes_inner(bytes))).map_err(|_| error("the PDF parser could not inspect this document"))?
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 fn page_sizes_inner(bytes: &[u8]) -> Result<Vec<(f32, f32)>, IoError> {
     if bytes.len() > 256 * 1024 * 1024 {
         return Err(error("PDF exceeds the 256 MB import limit"));
@@ -107,8 +114,8 @@ fn page_sizes_inner(bytes: &[u8]) -> Result<Vec<(f32, f32)>, IoError> {
 }
 
 /// Small page preview for the import picker; it does not create an editing document.
+#[cfg(not(target_arch = "wasm32"))]
 pub fn page_preview(bytes: Arc<Vec<u8>>, index: usize) -> Result<(u32, u32, Vec<u8>), IoError> {
-    require_native_import()?;
     if bytes.len() > 256 * 1024 * 1024 {
         return Err(error("PDF exceeds the 256 MB import limit"));
     }
@@ -133,6 +140,7 @@ pub fn page_preview(bytes: Arc<Vec<u8>>, index: usize) -> Result<(u32, u32, Vec<
     .map_err(|_| error("the PDF renderer could not preview this page"))?
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 fn import_inner(name: &str, bytes: &[u8], selected: Option<&[usize]>, options: ImportOptions, ctl: &Interrupt) -> Result<ImportResult, IoError> {
     let pdf = Pdf::new(Arc::new(bytes.to_vec()))
         .map_err(|e| error(format!("cannot open PDF ({e:?}); password-protected files must first be unlocked in a PDF editor")))?;
@@ -209,6 +217,29 @@ fn import_inner(name: &str, bytes: &[u8], selected: Option<&[usize]>, options: I
         source_read_only: true,
         preview_only: false,
     })
+}
+
+#[cfg(target_arch = "wasm32")]
+pub fn import_pdf_pages_with(
+    _name: &str,
+    _bytes: &[u8],
+    _selected: Option<&[usize]>,
+    _options: ImportOptions,
+    _ctl: &Interrupt,
+) -> Result<ImportResult, IoError> {
+    require_native_import()
+}
+
+/// Read page sizes without rasterizing any page; unavailable in the web editor.
+#[cfg(target_arch = "wasm32")]
+pub fn page_sizes(_bytes: &[u8]) -> Result<Vec<(f32, f32)>, IoError> {
+    require_native_import()
+}
+
+/// Small page preview for the import picker; unavailable in the web editor.
+#[cfg(target_arch = "wasm32")]
+pub fn page_preview(_bytes: Arc<Vec<u8>>, _index: usize) -> Result<(u32, u32, Vec<u8>), IoError> {
+    require_native_import()
 }
 
 /// Export a normal canvas as one page, or each artboard as a separate page.
