@@ -42,6 +42,7 @@ pub(crate) struct Picker {
     thumbnail_size: ThumbnailSize,
     resolution: f32,
     pub slot: Option<usize>,
+    pub order: Option<crate::jobs_ui::OpenOrder>,
     pub target: Option<photocraft_doc::DocId>,
 }
 
@@ -64,6 +65,7 @@ pub(crate) fn queue(app: &mut PhotocraftApp, name: &str, path: Option<String>, b
         thumbnail_size: ThumbnailSize::default(),
         resolution: 144.0,
         slot: None,
+        order: None,
         target: app.session.active().map(|d| d.doc.id),
     });
     app.ui.status = "Choose PDF pages".into();
@@ -90,6 +92,7 @@ impl PhotocraftApp {
         )
         .map_err(|e| e.to_string())?;
         self.pdf_pickers.pop_front();
+        crate::jobs_ui::end_batch(self);
         self.sync_views();
         self.ui.status = format!("Placed {} PDF page(s) as smart objects", pages.len());
         self.ui.status_error = false;
@@ -116,12 +119,18 @@ impl PhotocraftApp {
         }
         // Retain the picker until decoding or starting the job succeeds. A bad resolution
         // must be correctable without reopening the source or losing the selected pages.
-        let (name, path, bytes, resolution, slot) = (p.name.clone(), p.path.clone(), Arc::clone(&p.bytes), p.resolution, p.slot);
+        let (name, path, bytes, resolution, slot, order) = (p.name.clone(), p.path.clone(), Arc::clone(&p.bytes), p.resolution, p.slot, p.order);
         if self.background_jobs {
             let count = self.jobs.opens.len();
+            let first = self.session.documents().len();
             crate::jobs_ui::start_open(self, &name, path, OpenSource::PdfPages { bytes, pages: pages.to_vec(), resolution })?;
             if let Some(tab) = self.jobs.opens.get_mut(count) {
                 tab.slot = slot;
+                tab.order = order;
+            } else {
+                let count = self.session.documents().len().saturating_sub(first);
+                let first = crate::jobs_ui::position_opened_tabs(self, first, count, slot, order);
+                self.session.set_active(first);
             }
         } else {
             let imported = photocraft_io::pdf::import_pdf_pages_with(
@@ -140,6 +149,8 @@ impl PhotocraftApp {
                     st.source_read_only = true;
                 }
             }
+            let count = self.session.documents().len().saturating_sub(first);
+            let first = crate::jobs_ui::position_opened_tabs(self, first, count, slot, order);
             self.session.set_active(first);
             if let Some(path) = path {
                 self.opened_from(&path);
@@ -148,12 +159,14 @@ impl PhotocraftApp {
             self.ui.status = format!("Opened {} PDF page(s) in separate tabs", pages.len());
         }
         self.pdf_pickers.pop_front();
+        crate::jobs_ui::end_batch(self);
         Ok(())
     }
 
     /// Dismiss the current picker without creating or changing a document.
     pub fn cancel_pdf_import(&mut self) {
         self.pdf_pickers.pop_front();
+        crate::jobs_ui::end_batch(self);
         self.ui.status = "PDF import cancelled".into();
     }
 }
@@ -408,6 +421,7 @@ mod tests {
             thumbnail_size: super::ThumbnailSize::Small,
             resolution: 144.0,
             slot: None,
+            order: None,
             target: None,
         });
         // The harness draws immediately; bind themed fonts before drawing buttons.
@@ -482,6 +496,7 @@ mod tests {
                         thumbnail_size,
                         resolution: 144.0,
                         slot: None,
+                        order: None,
                         target: placing.then(photocraft_doc::DocId::fresh),
                     });
                     let ready = std::rc::Rc::new(std::cell::Cell::new(false));

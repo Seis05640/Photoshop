@@ -28,6 +28,9 @@ pub struct PrintPage {
     pub marks: Marks,
     pub description: Option<String>,
     pub label: Option<String>,
+    /// Photoshop's Functions › Emulsion Down: the whole page mirrored left to right, for transfer
+    /// printing (sublimation, iron-on, DTF, film read from the back).
+    pub emulsion_down: bool,
 }
 
 fn pdf_string(s: &str) -> String {
@@ -189,7 +192,11 @@ pub fn print_pdf(page: &PrintPage) -> Vec<u8> {
     let (pw, ph) = page.paper;
     let (x, y, w, h) = page.rect;
     // An explicit white page, so every viewer (and rasteriser) shows paper, not transparency.
-    let mut content = format!("q 1 g 0 0 {pw:.2} {ph:.2} re f Q\nq {w:.3} 0 0 {h:.3} {x:.3} {y:.3} cm /Im0 Do Q\n");
+    let mut content = format!("q 1 g 0 0 {pw:.2} {ph:.2} re f Q\n");
+    if page.emulsion_down {
+        content.push_str(&format!("q -1 0 0 1 {pw:.2} 0 cm\n"));
+    }
+    content.push_str(&format!("q {w:.3} 0 0 {h:.3} {x:.3} {y:.3} cm /Im0 Do Q\n"));
     content.push_str(&marks_ops(page.marks, page.rect));
     let any_marks = page.marks.corner_crop || page.marks.center_crop || page.marks.registration;
     let pad = if any_marks { 30.0 } else { 6.0 };
@@ -198,6 +205,9 @@ pub fn print_pdf(page: &PrintPage) -> Vec<u8> {
     }
     if let Some(d) = page.description.as_deref().filter(|d| !d.is_empty()) {
         content.push_str(&format!("BT /F1 8 Tf 0 g {:.2} {:.2} Td {} Tj ET\n", x, y - pad - 8.0, pdf_string(d)));
+    }
+    if page.emulsion_down {
+        content.push_str("Q\n");
     }
 
     let img = &page.image;
