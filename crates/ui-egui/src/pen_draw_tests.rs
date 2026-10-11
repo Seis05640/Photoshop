@@ -140,6 +140,7 @@ fn dragging_on_the_first_anchor_closes_with_its_handles_in_one_step() {
     assert!(k.smooth);
 
     // A plain click on a smooth first anchor closes without touching its handles.
+    h.state_mut().ui.selected_path = None;
     drag(&mut h, &[[20.0, 20.0], [40.0, 20.0]], None);
     click(&mut h, [120.0, 20.0]);
     click(&mut h, [120.0, 100.0]);

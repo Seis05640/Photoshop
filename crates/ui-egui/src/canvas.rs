@@ -131,6 +131,60 @@ pub struct Drag {
     /// every Move-tool drag with a selection does (`move_ui::moves_selected_pixels_with`).
     pub sel_move: Option<bool>,
     pub lasso: Option<crate::lasso_ui::Lasso>,
+    /// Freeform Pen and Path Selection gestures belong to their source document and target.
+    vector_owner: Option<VectorGestureOwner>,
+    pen_owner: Option<crate::vector_ui::PenOwner>,
+}
+
+#[derive(Clone, Debug)]
+struct VectorGestureOwner {
+    doc: photocraft_doc::DocId,
+    document: std::sync::Weak<Document>,
+    revision: u64,
+    layer: Option<photocraft_doc::LayerId>,
+    selected_path: Option<String>,
+    vector_mask: bool,
+    mode: String,
+    tool: Tool,
+}
+
+impl VectorGestureOwner {
+    fn capture(app: &PhotocraftApp) -> Option<Self> {
+        let st = app.session.active()?;
+        Some(Self {
+            doc: st.doc.id,
+            document: std::sync::Arc::downgrade(&st.doc),
+            revision: st.revision,
+            layer: st.active_layer,
+            selected_path: app.ui.selected_path.clone(),
+            vector_mask: app.ui.vector_mask_target,
+            mode: app.ui.tool_options.vector_mode.clone(),
+            tool: app.active_tool(),
+        })
+    }
+
+    fn valid(&self, app: &PhotocraftApp) -> bool {
+        Self::capture(app).is_some_and(|current| {
+            self.doc == current.doc
+                && std::sync::Weak::ptr_eq(&self.document, &current.document)
+                && self.revision == current.revision
+                && self.layer == current.layer
+                && self.selected_path == current.selected_path
+                && self.vector_mask == current.vector_mask
+                && self.mode == current.mode
+                && self.tool == current.tool
+        })
+    }
+}
+
+/// Cancel a transient vector gesture before it can preview or finish on another document.
+pub(crate) fn cancel_stale_vector_drag(app: &mut PhotocraftApp) -> bool {
+    let stale = app.drag.as_ref().and_then(|d| d.vector_owner.as_ref()).is_some_and(|owner| !owner.valid(app));
+    if stale {
+        app.drag = None;
+        app.cancelled_vector_drag = true;
+    }
+    stale
 }
 
 impl Drag {
@@ -147,6 +201,8 @@ impl Drag {
             reposition: false,
             sel_move: None,
             lasso: None,
+            vector_owner: None,
+            pen_owner: None,
         }
     }
 
@@ -2898,9 +2954,11 @@ pub fn canvas_view(app: &mut PhotocraftApp, ui: &mut egui::Ui, idx: usize, rect:
         if tool == Tool::Crop && response.is_pointer_button_down_on() && ui.input(|i| i.pointer.primary_down()) && crate::crop_ui::press(app) {
             ctx.request_repaint();
         }
-        // Capture intent at the press, before egui's drag threshold: Type transforms keep
-        // Command, and marquee add/subtract must not become a live Shift/Alt constraint.
-        let capture_press = tool.is_type() || matches!(tool, Tool::RectMarquee | Tool::EllipseMarquee | Tool::SingleRowMarquee | Tool::SingleColumnMarquee);
+        // Capture intent before egui's drag threshold: Type keeps Command, marquee keeps its
+        // operation, and Pen point edits keep the action chosen on the press.
+        let pen_press = matches!(tool, Tool::Pen | Tool::AddAnchorPoint | Tool::DeleteAnchorPoint | Tool::ConvertPoint);
+        let capture_press =
+            pen_press || tool.is_type() || matches!(tool, Tool::RectMarquee | Tool::EllipseMarquee | Tool::SingleRowMarquee | Tool::SingleColumnMarquee);
         let tool_press = egui::Id::new(("tool-pointer-press-modifiers", idx));
         if capture_press
             && let Some((p, press_mods)) = ui.input(|i| {
@@ -3115,7 +3173,11 @@ pub fn canvas_view(app: &mut PhotocraftApp, ui: &mut egui::Ui, idx: usize, rect:
             && let Some(p) = response.interact_pointer_pos()
         {
             let click_button = if app.secondary_erase { PointerButton::Secondary } else { PointerButton::Primary };
-            let click_mods = ui.input(|i| pointer_button_modifiers(&i.events, click_button)).unwrap_or(mods);
+            let click_mods = if pen_press {
+                ctx.data(|d| d.get_temp(tool_press)).unwrap_or(mods)
+            } else {
+                ui.input(|i| pointer_button_modifiers(&i.events, click_button)).unwrap_or(mods)
+            };
             let d = xf.to_doc(p);
             match tool {
                 Tool::Zoom => {
@@ -3379,6 +3441,18 @@ pub fn canvas_view(app: &mut PhotocraftApp, ui: &mut egui::Ui, idx: usize, rect:
                         egui::CursorIcon::Crosshair
                     } else {
                         pipette_cursor(ui.ctx(), p)
+                    }
+                }
+                Tool::Pen | Tool::AddAnchorPoint | Tool::DeleteAnchorPoint | Tool::ConvertPoint => {
+                    if app.session.prefs().cursors.other == photocraft_engine::prefs::OtherCursor::Precise {
+                        egui::CursorIcon::Crosshair
+                    } else {
+                        let mods = crate::workspace_ui::sticky_mods(app, ui.input(|i| i.modifiers));
+                        if !crate::vector_ui::pen_converting(app) && (mods.command || mods.ctrl || crate::direct_select::captured_drag(app)) {
+                            egui::CursorIcon::Default
+                        } else {
+                            crate::tool_cursor::pen(&painter, p, crate::vector_ui::pen_cursor_with_modifiers(app, xf.to_doc(p), mods))
+                        }
                     }
                 }
                 // The Color Sampler: a pipette, or the crosshair for Precise Other Cursors.
@@ -4224,6 +4298,17 @@ fn tool_move(app: &mut PhotocraftApp, x: f64, y: f64, pressure: f32, mods: egui:
 
 /// Tool state machine. Shared by mouse input and automation.
 pub fn tool_event(app: &mut PhotocraftApp, ev: ToolEvent, mods: egui::Modifiers) {
+    cancel_stale_vector_drag(app);
+    if app.cancelled_vector_drag {
+        match ev {
+            ToolEvent::Down { .. } => app.cancelled_vector_drag = false,
+            ToolEvent::Move { .. } => return,
+            ToolEvent::Up { .. } => {
+                app.cancelled_vector_drag = false;
+                return;
+            }
+        }
+    }
     if crate::symmetry_ui::pointer(app, ev, crate::workspace_ui::sticky_mods(app, mods)) {
         return;
     }
@@ -4282,11 +4367,29 @@ pub fn tool_event(app: &mut PhotocraftApp, ev: ToolEvent, mods: egui::Modifiers)
     // Move tool: ⇧ locks the axis, ⌥ duplicates (move_mods.rs).
     let ev = crate::move_mods::filter_event(app, ev, mods);
     // Direct Selection, and the Pen's ⌘ (Direct Selection) and ⌥ (Convert Point) modes (#790).
-    if crate::direct_select::pointer(app, ev, mods) {
+    if crate::vector_ui::pen_edit_pointer(app, raw, mods) {
+        return;
+    }
+    let converting = crate::vector_ui::pen_converting(app)
+        || (matches!(raw, ToolEvent::Down { .. })
+            && app.ui.direct_selection.drag.is_none()
+            && !mods.command
+            && (app.ui.tool == Tool::ConvertPoint || (app.ui.tool == Tool::Pen && mods.alt && app.ui.pen.is_none())));
+    let path_ev =
+        if converting || (matches!(raw, ToolEvent::Down { .. }) && !mods.command && matches!(app.ui.tool, Tool::AddAnchorPoint | Tool::DeleteAnchorPoint)) {
+            raw
+        } else {
+            ev
+        };
+    if converting {
+        app.prefs_rt.snap = None;
+        app.prefs_rt.snap_lines.clear();
+    }
+    if crate::direct_select::pointer(app, path_ev, mods) {
         return;
     }
     // Add / Delete Anchor Point tools (#1044).
-    if crate::anchor_tools::pointer(app, ev, mods) {
+    if crate::anchor_tools::pointer(app, path_ev, mods) {
         return;
     }
     // Ruler, Count and Note tools.
@@ -4472,9 +4575,11 @@ pub fn tool_event(app: &mut PhotocraftApp, ev: ToolEvent, mods: egui::Modifiers)
             }
             match tool {
                 Tool::Pen => {
-                    if !(mods.alt && crate::vector_ui::pen_grab_handle(app, x, y)) {
-                        crate::vector_ui::pen_down(app, x, y);
-                    }
+                    let close_point = match raw {
+                        ToolEvent::Down { x: raw_x, y: raw_y, .. } => [raw_x, raw_y],
+                        _ => [x, y],
+                    };
+                    crate::vector_ui::pen_down_at(app, [x, y], close_point);
                     return;
                 }
                 Tool::CurvaturePen => {
@@ -4538,7 +4643,14 @@ pub fn tool_event(app: &mut PhotocraftApp, ev: ToolEvent, mods: egui::Modifiers)
             }
             // ⌥ flips Dodge/Burn and Blur/Sharpen for this stroke.
             let tool = crate::retouch_ui::alt_flipped(tool, mods.alt);
-            app.drag = Some(Drag::new(tool, from.map_or([x, y], |p| [p[0], p[1]]), points, mods, erase));
+            let mut drag = Drag::new(tool, from.map_or([x, y], |p| [p[0], p[1]]), points, mods, erase);
+            if matches!(tool, Tool::FreeformPen | Tool::PathSelection) {
+                drag.vector_owner = VectorGestureOwner::capture(app);
+            }
+            if tool == Tool::FreeformPen {
+                drag.pen_owner = crate::vector_ui::capture_pen_owner(app);
+            }
+            app.drag = Some(drag);
             app.trail = None;
             app.stylus.begin_stroke();
             if from.is_some() {
@@ -4818,6 +4930,9 @@ fn commit_brush_stroke(app: &mut PhotocraftApp, d: &Drag) {
 }
 
 pub(crate) fn finish_gesture(app: &mut PhotocraftApp, d: Drag) {
+    if d.vector_owner.as_ref().is_some_and(|owner| !owner.valid(app)) {
+        return;
+    }
     let end = d.points.last().copied().unwrap_or([d.start[0], d.start[1], 1.0]);
     if let Some(floating) = d.sel_move {
         finish_selection_drag(app, floating, d.start, [end[0], end[1]]);
@@ -4838,7 +4953,11 @@ pub(crate) fn finish_gesture(app: &mut PhotocraftApp, d: Drag) {
     }
     match d.tool {
         Tool::ObjectSelection => crate::retouch_ui::finish_object_selection(app, d.start, [end[0], end[1]], d.modifiers),
-        Tool::FreeformPen => crate::vector_ui::freeform_finish(app, &d.points),
+        Tool::FreeformPen => {
+            if let Some(owner) = d.pen_owner {
+                crate::vector_ui::freeform_finish_owned(app, &d.points, owner);
+            }
+        }
         // Photoshop: a click without dragging opens Create Rectangle / Ellipse / … instead.
         t if crate::vector_ui::is_shape_tool(t)
             && crate::shape_dialog::is_click(d.start, &d.points, app.current_zoom())
@@ -6712,3 +6831,11 @@ mod rotation_preview_isolation_tests {
         assert!(ensure_filter_preview(&mut app, 0, &egui::Context::default()).is_none(), "an inactive tab must never inherit the command preview");
     }
 }
+
+#[cfg(test)]
+#[path = "pen_gesture_owner_tests.rs"]
+mod pen_gesture_owner_tests;
+
+#[cfg(test)]
+#[path = "pen_path_visual_tests.rs"]
+mod pen_path_visual_tests;

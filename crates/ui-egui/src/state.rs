@@ -563,6 +563,8 @@ pub struct ToolOptions {
     pub enhance_edge: bool,
     /// Pen: "path" (work path) or "shape" (shape layer).
     pub vector_mode: String,
+    /// Standard Pen: insert on segments and remove existing anchors automatically.
+    pub pen_auto_add_delete: bool,
     /// Shape tools: fill with the foreground colour, stroke width (0 = none), rectangle corner
     /// radius, polygon sides, line weight.
     pub shape_fill: bool,
@@ -768,6 +770,7 @@ impl Default for ToolOptions {
             finger_painting: false,
             enhance_edge: false,
             vector_mode: "path".into(),
+            pen_auto_add_delete: true,
             shape_fill: true,
             stroke_width: 0.0,
             shape_stroke: Default::default(),

@@ -10,6 +10,17 @@ use std::sync::Arc;
 use egui::{CursorIcon, CustomCursorImage, Painter, Pos2, Stroke, vec2};
 
 mod hand;
+mod pen;
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub(crate) enum PenCursor {
+    New,
+    Draw,
+    Close,
+    Add,
+    Delete,
+    Convert,
+}
 
 /// The largest cursor bitmap, in physical pixels; a larger tip paints its outline instead (with a
 /// small OS crosshair at the hotspot). Windows takes winit's limit. Elsewhere, X servers and
@@ -24,6 +35,7 @@ enum Shape {
     Circle { radius: f32, centre: bool },
     Crosshair { length: f32, gap: f32 },
     Hand { closed: bool },
+    Pen(PenCursor),
 }
 
 #[derive(Clone)]
@@ -67,6 +79,18 @@ pub(crate) fn circle(painter: &Painter, at: Pos2, radius: f32, centre: bool) -> 
 
 pub(crate) fn crosshair(painter: &Painter, at: Pos2, length: f32, gap: f32) -> CursorIcon {
     show(painter, at, Shape::Crosshair { length, gap })
+}
+
+/// Pen and point-editing marks stay at the pointer and move with the OS cursor too.
+pub(crate) fn pen(painter: &Painter, at: Pos2, state: PenCursor) -> CursorIcon {
+    let ctx = painter.ctx();
+    if native(ctx)
+        && let Some(image) = cached_image(ctx, Shape::Pen(state), native_scale(ctx))
+    {
+        ctx.set_cursor_image(Some(image));
+        return CursorIcon::None;
+    }
+    if pen::paint(painter, at, state) { CursorIcon::None } else { CursorIcon::Crosshair }
 }
 
 /// Can this pass show an OS cursor bitmap? eframe's immediate viewports and its web integration
@@ -148,7 +172,7 @@ fn paint(painter: &Painter, at: Pos2, shape: Shape) {
             }
             Shape::Crosshair { length, gap } => paint_crosshair(painter, at, length, gap, stroke),
             // Only ever a bitmap: without one the OS draws its own grab cursors.
-            Shape::Hand { .. } => {}
+            Shape::Hand { .. } | Shape::Pen(_) => {}
         }
     }
 }
@@ -181,6 +205,7 @@ fn extent(shape: Shape) -> Option<f32> {
             length
         }
         Shape::Hand { .. } => hand::HALF,
+        Shape::Pen(_) => pen::SIZE / 2.0,
     })
 }
 
@@ -204,6 +229,7 @@ fn coverage(shape: Shape, dx: f32, dy: f32, scale: f32) -> (f32, f32) {
             let crease = (0.45 * scale + 0.5 - hand::crease(closed, lx, ly) * scale).clamp(0.0, 1.0);
             (inside * (1.0 - crease), outline.max(inside * crease))
         }
+        Shape::Pen(_) => (0.0, 0.0),
     }
 }
 
@@ -215,6 +241,9 @@ fn stroke_coverage(distance: f32, scale: f32) -> (f32, f32) {
 fn rasterize(shape: Shape, scale: f32) -> Option<CustomCursorImage> {
     if !scale.is_finite() || scale <= 0.0 {
         return None;
+    }
+    if let Shape::Pen(state) = shape {
+        return pen::rasterize(scale, state);
     }
     let extent = extent(shape)?;
     // Odd dimensions put the hotspot on the centre pixel at every DPI. Include the outline
