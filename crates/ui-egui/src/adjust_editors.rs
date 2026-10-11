@@ -526,13 +526,37 @@ fn nearest(xs: &[f32], x: f32) -> Option<u8> {
     xs.iter().enumerate().min_by(|a, b| (a.1 - x).abs().total_cmp(&(b.1 - x).abs())).map(|(i, _)| i as u8)
 }
 
+fn levels_channel_id(mem: egui::Id) -> egui::Id {
+    mem.with("levels-ch")
+}
+
+fn levels_drag_id(mem: egui::Id) -> egui::Id {
+    mem.with("levels-drag")
+}
+
+/// The Levels Input slider handle being dragged in the editor rooted at `mem` (0 black, 1 gamma,
+/// 2 white), as of its last frame.
+pub(crate) fn levels_drag(ctx: &egui::Context, mem: egui::Id) -> Option<u8> {
+    ctx.data(|d| d.get_temp::<Option<u8>>(levels_drag_id(mem))).flatten()
+}
+
+/// Levels reset to defaults (Alt+Cancel in the dialog): every channel's input, gamma and output
+/// levels back to neutral in the values' channel space, and the Channel choice back to the
+/// composite, as the dialog opens.
+pub fn reset_levels(ctx: &egui::Context, mem: egui::Id, v: &mut Value) {
+    let neutral = photocraft_doc::adjust::LevelsChannel::default();
+    let space = space_of(v);
+    *v = adjust_params::to_params(&Adjustment::Levels { master: neutral.clone(), per_channel: Default::default(), space, black: neutral });
+    ctx.data_mut(|d| d.insert_temp(levels_channel_id(mem), 0usize));
+}
+
 fn levels(ui: &mut egui::Ui, v: &mut Value, cx: &EditorCx) -> Edit {
     let t = Tokens::get(ui.ctx());
     let chans = tone_channels(space_of(v), cx.gray);
     let mut ch = 0;
     let mut auto = false;
     ui.horizontal(|ui| {
-        ch = channel_picker(ui, cx.mem.with("levels-ch"), chans, tl!("Channel:"));
+        ch = channel_picker(ui, levels_channel_id(cx.mem), chans, tl!("Channel:"));
         ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
             auto = widgets::secondary_button(ui, tl!("Auto"), 0.0).clicked();
         });
@@ -564,7 +588,9 @@ fn levels(ui: &mut egui::Ui, v: &mut Value, cx: &EditorCx) -> Edit {
     let track = sr.shrink2(vec2(6.0, 0.0));
     let xpos = |val: f32| track.left() + val / 255.0 * track.width();
     let xval = |x: f32| ((x - track.left()) / track.width() * 255.0).clamp(0.0, 255.0);
-    let drag_id = cx.mem.with("levels-drag");
+    // Where 0 and 255 sit (tests press the handles there).
+    ui.data_mut(|d| d.insert_temp(cx.mem.with("levels-slider"), track));
+    let drag_id = levels_drag_id(cx.mem);
     let mut which: Option<u8> = ui.data(|d| d.get_temp(drag_id)).flatten();
     let ctx = ui.ctx().clone();
     let pressed = |r: &egui::Response| r.is_pointer_button_down_on() && ctx.input(|i| i.pointer.primary_pressed());
