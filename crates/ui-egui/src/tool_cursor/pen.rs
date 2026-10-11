@@ -1,4 +1,4 @@
-//! The licensed Pen tool SVG as an outlined cursor, with its nib as the hotspot.
+//! The licensed Pen tool SVG and original point-editing marks, with a stable hotspot.
 
 use super::{CustomCursorImage, MAX_SIDE, Painter, PenCursor, Pos2, Shape, cached_image, stroke_coverage};
 use std::sync::Arc;
@@ -26,34 +26,37 @@ pub(super) fn rasterize(scale: f32, state: PenCursor) -> Option<CustomCursorImag
     // Reserve the same badge space in every state, so changing state cannot shift the nib.
     let side = (canvas_size as u16).checked_add(2)?;
     let bytes = usize::from(side).checked_mul(usize::from(side))?.checked_mul(4)?;
-    let source = std::str::from_utf8(include_bytes!("../../../../assets/icons/pen-tool.svg")).ok()?;
-    let load = |width: &str| {
-        let svg = source.replace("currentColor", "#ffffff").replace("stroke-width=\"2\"", width);
-        egui_extras::image::load_svg_bytes_with_size(
-            svg.as_bytes(),
-            egui::load::SizeHint::Size { width: u32::from(source_side), height: u32::from(source_side), maintain_aspect_ratio: true },
-            &Default::default(),
-        )
-        .ok()
-    };
-    let dark_mask = load("stroke-width=\"3.75\"")?;
-    let light_mask = load("stroke-width=\"1.75\"")?;
-    let expected_size = [usize::from(source_side); 2];
-    let pixels = expected_size[0].checked_mul(expected_size[1])?;
-    if dark_mask.size != expected_size || light_mask.size != expected_size || dark_mask.pixels.len() != pixels || light_mask.pixels.len() != pixels {
-        return None;
-    }
+    let hot = 1 + (NIB * size).round() as u16;
     let [dark, light] = crate::theme::Tokens::cursor_outline();
     let mut rgba = vec![0; bytes];
-    for (i, (dark_pixel, light_pixel)) in dark_mask.pixels.iter().zip(&light_mask.pixels).enumerate() {
-        let a_dark = f32::from(dark_pixel.a()) * f32::from(dark.a()) / (255.0 * 255.0);
-        let a_light = f32::from(light_pixel.a()) * f32::from(light.a()) / (255.0 * 255.0);
-        let alpha = a_light + a_dark * (1.0 - a_light);
-        let white = if alpha > 0.0 { (255.0 * a_light / alpha).round() as u8 } else { 0 };
-        let row = i / expected_size[0] + 1;
-        let col = i % expected_size[0] + 1;
-        let offset = row.checked_mul(usize::from(side))?.checked_add(col)?.checked_mul(4)?;
-        rgba.get_mut(offset..offset.checked_add(4)?)?.copy_from_slice(&[white, white, white, (255.0 * alpha).round() as u8]);
+    if state != PenCursor::Convert {
+        let source = std::str::from_utf8(include_bytes!("../../../../assets/icons/pen-tool.svg")).ok()?;
+        let load = |width: &str| {
+            let svg = source.replace("currentColor", "#ffffff").replace("stroke-width=\"2\"", width);
+            egui_extras::image::load_svg_bytes_with_size(
+                svg.as_bytes(),
+                egui::load::SizeHint::Size { width: u32::from(source_side), height: u32::from(source_side), maintain_aspect_ratio: true },
+                &Default::default(),
+            )
+            .ok()
+        };
+        let dark_mask = load("stroke-width=\"3.75\"")?;
+        let light_mask = load("stroke-width=\"1.75\"")?;
+        let expected_size = [usize::from(source_side); 2];
+        let pixels = expected_size[0].checked_mul(expected_size[1])?;
+        if dark_mask.size != expected_size || light_mask.size != expected_size || dark_mask.pixels.len() != pixels || light_mask.pixels.len() != pixels {
+            return None;
+        }
+        for (i, (dark_pixel, light_pixel)) in dark_mask.pixels.iter().zip(&light_mask.pixels).enumerate() {
+            let a_dark = f32::from(dark_pixel.a()) * f32::from(dark.a()) / (255.0 * 255.0);
+            let a_light = f32::from(light_pixel.a()) * f32::from(light.a()) / (255.0 * 255.0);
+            let alpha = a_light + a_dark * (1.0 - a_light);
+            let white = if alpha > 0.0 { (255.0 * a_light / alpha).round() as u8 } else { 0 };
+            let row = i / expected_size[0] + 1;
+            let col = i % expected_size[0] + 1;
+            let offset = row.checked_mul(usize::from(side))?.checked_add(col)?.checked_mul(4)?;
+            rgba.get_mut(offset..offset.checked_add(4)?)?.copy_from_slice(&[white, white, white, (255.0 * alpha).round() as u8]);
+        }
     }
     if state != PenCursor::Draw {
         for row in 0..side {
@@ -63,6 +66,9 @@ pub(super) fn rasterize(scale: f32, state: PenCursor) -> Option<CustomCursorImag
                 let distance = match state {
                     PenCursor::New => star_distance(x, y),
                     PenCursor::Close => (x.hypot(y) - 2.3).abs(),
+                    PenCursor::Add => super::cross_distance(x.abs(), y.abs(), 2.8, 0.0),
+                    PenCursor::Delete => (x - x.clamp(-2.8, 2.8)).hypot(y),
+                    PenCursor::Convert => corner_distance((f32::from(col) - f32::from(hot)) / scale, (f32::from(row) - f32::from(hot)) / scale),
                     PenCursor::Draw => continue,
                 };
                 let (fill, outline) = stroke_coverage(distance * scale, scale);
@@ -79,8 +85,17 @@ pub(super) fn rasterize(scale: f32, state: PenCursor) -> Option<CustomCursorImag
             }
         }
     }
-    let hot = 1 + (NIB * size).round() as u16;
     Some(CustomCursorImage { rgba: Arc::from(rgba), size: [side, side], hotspot: [hot, hot] })
+}
+
+/// Two slanted strokes meet at the hotspot: an original Convert Point corner, without a nib.
+fn corner_distance(x: f32, y: f32) -> f32 {
+    let mut distance = f32::MAX;
+    for [dx, dy] in [[6.0, 15.0], [15.0, 6.0]] {
+        let along = ((x * dx + y * dy) / (dx * dx + dy * dy)).clamp(0.0, 1.0);
+        distance = distance.min((x - along * dx).hypot(y - along * dy));
+    }
+    distance
 }
 
 /// Three crossed strokes form the new-path asterisk, drawn from original primitives.

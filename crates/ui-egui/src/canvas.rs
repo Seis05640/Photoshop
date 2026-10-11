@@ -3405,15 +3405,15 @@ pub fn canvas_view(app: &mut PhotocraftApp, ui: &mut egui::Ui, idx: usize, rect:
                         pipette_cursor(ui.ctx(), p)
                     }
                 }
-                Tool::Pen => {
+                Tool::Pen | Tool::AddAnchorPoint | Tool::DeleteAnchorPoint | Tool::ConvertPoint => {
                     if app.session.prefs().cursors.other == photocraft_engine::prefs::OtherCursor::Precise {
                         egui::CursorIcon::Crosshair
                     } else {
                         let mods = crate::workspace_ui::sticky_mods(app, ui.input(|i| i.modifiers));
-                        if mods.command || mods.ctrl {
+                        if !crate::vector_ui::pen_converting(app) && (mods.command || mods.ctrl || crate::direct_select::captured_drag(app)) {
                             egui::CursorIcon::Default
                         } else {
-                            crate::tool_cursor::pen(&painter, p, crate::vector_ui::pen_cursor(app, xf.to_doc(p)))
+                            crate::tool_cursor::pen(&painter, p, crate::vector_ui::pen_cursor_with_modifiers(app, xf.to_doc(p), mods))
                         }
                     }
                 }
@@ -4326,11 +4326,29 @@ pub fn tool_event(app: &mut PhotocraftApp, ev: ToolEvent, mods: egui::Modifiers)
     // Move tool: ⇧ locks the axis, ⌥ duplicates (move_mods.rs).
     let ev = crate::move_mods::filter_event(app, ev, mods);
     // Direct Selection, and the Pen's ⌘ (Direct Selection) and ⌥ (Convert Point) modes (#790).
-    if crate::direct_select::pointer(app, ev, mods) {
+    if crate::vector_ui::pen_edit_pointer(app, raw, mods) {
+        return;
+    }
+    let converting = crate::vector_ui::pen_converting(app)
+        || (matches!(raw, ToolEvent::Down { .. })
+            && app.ui.direct_selection.drag.is_none()
+            && !mods.command
+            && (app.ui.tool == Tool::ConvertPoint || (app.ui.tool == Tool::Pen && mods.alt && app.ui.pen.is_none())));
+    let path_ev =
+        if converting || (matches!(raw, ToolEvent::Down { .. }) && !mods.command && matches!(app.ui.tool, Tool::AddAnchorPoint | Tool::DeleteAnchorPoint)) {
+            raw
+        } else {
+            ev
+        };
+    if converting {
+        app.prefs_rt.snap = None;
+        app.prefs_rt.snap_lines.clear();
+    }
+    if crate::direct_select::pointer(app, path_ev, mods) {
         return;
     }
     // Add / Delete Anchor Point tools (#1044).
-    if crate::anchor_tools::pointer(app, ev, mods) {
+    if crate::anchor_tools::pointer(app, path_ev, mods) {
         return;
     }
     // Ruler, Count and Note tools.

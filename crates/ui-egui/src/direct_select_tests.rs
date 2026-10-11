@@ -407,7 +407,12 @@ fn the_convert_point_tool_shows_the_path_overlay() {
     let mut app = app(Tool::ConvertPoint);
     assert!(super::shows(&app, Modifiers::NONE), "anchors are drawn before any press");
     app.ui.tool = Tool::Pen;
+    with_path(&mut app);
+    app.ui.selected_path = Some("work".into());
+    assert!(super::shows(&app, Modifiers::NONE), "Auto Add/Delete exposes the selected path's anchors");
+    app.ui.tool_options.pen_auto_add_delete = false;
     assert!(!super::shows(&app, Modifiers::NONE));
+    assert!(super::shows(&app, Modifiers::ALT), "Convert still shows handles with automatic editing disabled");
     assert!(super::shows(&app, Modifiers::COMMAND));
 }
 

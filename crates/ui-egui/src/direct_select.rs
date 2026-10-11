@@ -140,7 +140,7 @@ pub(crate) fn cancel_stale(app: &mut PhotocraftApp) -> bool {
 #[derive(Clone, Debug, PartialEq)]
 pub enum Drag {
     /// Editing `target`: `base` is its path at the press, `preview` the edit so far.
-    Edit { target: PathRef, base: Path, edit: Edit, start: [f64; 2], end: [f64; 2], preview: Option<Path> },
+    Edit { target: PathRef, base: Path, edit: Edit, start: [f64; 2], end: [f64; 2], preview: Option<Path>, converting: bool },
     /// Marquee-selecting anchors (⇧ adds to the selection).
     Marquee { start: [f64; 2], end: [f64; 2], add: bool },
 }
@@ -205,6 +205,7 @@ fn owns(tool: Tool) -> bool {
 /// Delete Anchor Point tools show it too: they edit the same paths.
 pub fn shows(app: &PhotocraftApp, mods: Modifiers) -> bool {
     direct(app.ui.tool, mods)
+        || (app.ui.tool == Tool::Pen && app.ui.pen.is_none() && (mods.alt || app.ui.tool_options.pen_auto_add_delete))
         || app.ui.direct_selection.drag.is_some()
         || matches!(app.ui.tool, Tool::AddAnchorPoint | Tool::DeleteAnchorPoint | Tool::ConvertPoint)
 }
@@ -248,6 +249,43 @@ fn shown_handles(ds: &DirectSelection, path: &Path) -> Vec<([usize; 2], Handle)>
     }
     out.retain(|&(r, h)| knot(r).is_some_and(|k| !retracted(k, h)));
     out
+}
+
+/// Editable targets share the same lock and hit rules for the cursor and pointer press.
+pub(crate) fn writable(app: &PhotocraftApp, target: &PathRef) -> bool {
+    match target {
+        PathRef::Layer(id) => app.session.active().is_some_and(|st| {
+            let id = photocraft_doc::LayerId(*id);
+            let locks = st.doc.effective_locks(id);
+            st.doc.layer(id).is_some() && !locks.all && !locks.pixels
+        }),
+        _ => app.session.active().is_some(),
+    }
+}
+
+pub(crate) fn hit_target(app: &PhotocraftApp, p: [f64; 2], handles: bool) -> Option<(PathRef, Path, Hit)> {
+    hit_target_with(app, p, handles, |_| true)
+}
+
+pub(crate) fn hit_target_with(app: &PhotocraftApp, p: [f64; 2], handles: bool, accepts: impl Fn(&PathRef) -> bool) -> Option<(PathRef, Path, Hit)> {
+    let tol = 6.0 / f64::from(app.point_zoom().max(0.01));
+    let ds = &app.ui.direct_selection;
+    candidates(app).into_iter().filter(|(r, _)| accepts(r) && writable(app, r)).find_map(|(r, path)| {
+        let valid_selection =
+            ds.owner.as_ref().is_some_and(|owner| owner.valid(app) || (ds.drag.is_none() && owns(owner.tool) && owns(app.ui.tool) && owner.valid_path(app)));
+        let handles = if handles && valid_selection && ds.target.as_ref() == Some(&r) { shown_handles(ds, &path) } else { Vec::new() };
+        edit::hit(&path, Point::new(p[0], p[1]), tol, &handles).map(|hit| (r, path, hit))
+    })
+}
+
+pub(crate) fn conversion_drag(app: &PhotocraftApp) -> bool {
+    matches!(app.ui.tool, Tool::Pen | Tool::ConvertPoint)
+        && captured_drag(app)
+        && matches!(app.ui.direct_selection.drag, Some(Drag::Edit { converting: true, .. }))
+}
+
+pub(crate) fn captured_drag(app: &PhotocraftApp) -> bool {
+    app.ui.direct_selection.owner.as_ref().is_some_and(|owner| owner.valid(app)) && app.ui.direct_selection.drag.is_some()
 }
 
 /// Canvas pointer events for Direct Selection and the Pen's ⌘ / ⌥ modes; false when the event is
@@ -313,12 +351,7 @@ pub fn pointer(app: &mut PhotocraftApp, ev: ToolEvent, mods: Modifiers) -> bool 
 /// that hit nothing; the Convert Point tool has nothing else to do, so it keeps the press.
 fn press(app: &mut PhotocraftApp, p: [f64; 2], mods: Modifiers, convert: bool) -> bool {
     let own_tool = app.ui.tool == Tool::ConvertPoint;
-    let tol = 6.0 / f64::from(app.point_zoom().max(0.01));
-    let ds = &app.ui.direct_selection;
-    let found = candidates(app).into_iter().find_map(|(r, path)| {
-        let handles = if ds.target.as_ref() == Some(&r) { shown_handles(ds, &path) } else { Vec::new() };
-        edit::hit(&path, Point::new(p[0], p[1]), tol, &handles).map(|h| (r, path, h))
-    });
+    let found = hit_target(app, p, true);
     let owner = Owner::current(app);
     let ds = &mut app.ui.direct_selection;
     let Some((target, base, hit)) = found else {
@@ -341,7 +374,7 @@ fn press(app: &mut PhotocraftApp, p: [f64; 2], mods: Modifiers, convert: bool) -
             Edit::Handle(k, h, from, mods.alt || convert)
         }
         Hit::Anchor(k) if convert => {
-            if own_tool {
+            if own_tool || app.ui.tool == Tool::Pen {
                 // The tool selects the anchor it works on, so the anchor's handles show.
                 ds.segment = None;
                 ds.anchors = vec![k];
@@ -377,7 +410,7 @@ fn press(app: &mut PhotocraftApp, p: [f64; 2], mods: Modifiers, convert: bool) -
             Edit::Segment(k, t)
         }
     };
-    ds.drag = Some(Drag::Edit { target, base, edit, start: p, end: p, preview: None });
+    ds.drag = Some(Drag::Edit { target, base, edit, start: p, end: p, preview: None, converting: convert });
     true
 }
 

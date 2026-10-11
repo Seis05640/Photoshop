@@ -12,7 +12,6 @@
 
 use egui::{Color32, Modifiers, Pos2, Stroke};
 use photocraft_doc::vector::Path;
-use photocraft_geom::Point;
 use photocraft_vector::edit::{self, Hit};
 
 use crate::PhotocraftApp;
@@ -34,9 +33,7 @@ pub fn effective(tool: Tool, mods: Modifiers) -> Option<Tool> {
 /// segment (Add) or anchor (Delete) hit on it. An anchor hit with Add, or a segment with Delete,
 /// edits nothing.
 fn target(app: &PhotocraftApp, tool: Tool, p: [f64; 2]) -> Option<(PathRef, Path, Hit)> {
-    let tol = 6.0 / f64::from(app.point_zoom().max(0.01));
-    let (r, path, hit) =
-        crate::direct_select::candidates(app).into_iter().find_map(|(r, path)| edit::hit(&path, Point::new(p[0], p[1]), tol, &[]).map(|h| (r, path, h)))?;
+    let (r, path, hit) = crate::direct_select::hit_target(app, p, false)?;
     match (tool, hit) {
         (Tool::AddAnchorPoint, Hit::Segment(..)) | (Tool::DeleteAnchorPoint, Hit::Anchor(_)) => Some((r, path, hit)),
         _ => None,
@@ -54,6 +51,10 @@ pub fn pointer(app: &mut PhotocraftApp, ev: ToolEvent, mods: Modifiers) -> bool 
 
 fn click(app: &mut PhotocraftApp, tool: Tool, p: [f64; 2]) {
     let Some((r, _, hit)) = target(app, tool, p) else { return };
+    apply(app, r, hit);
+}
+
+pub(crate) fn apply(app: &mut PhotocraftApp, r: PathRef, hit: Hit) {
     let (id, mut params) = match hit {
         Hit::Segment([s, k], t) => ("path.addAnchor", serde_json::json!({"subpath": s, "knot": k, "t": t})),
         Hit::Anchor([s, k]) => ("path.deleteAnchor", serde_json::json!({"subpath": s, "knot": k})),

@@ -23,6 +23,7 @@ fn canvas_anchor(app: &mut PhotocraftApp, [x, y]: [f64; 2]) {
 #[test]
 fn canvas_close_hit_uses_the_pointer_before_pixel_and_grid_snapping() {
     let mut app = app();
+    app.ui.tool_options.pen_auto_add_delete = false;
     canvas_anchor(&mut app, [40.0, 40.0]);
     canvas_anchor(&mut app, [120.0, 40.0]);
     let close = [45.6, 40.0];
@@ -80,7 +81,8 @@ fn pen_cursor_follows_drawing_closing_and_starting_another_path() {
     let history = app.session.active().unwrap().history.past_len();
     anchor(&mut app, first);
     assert!(app.ui.pen.is_none());
-    assert_eq!(pen_cursor(&app, first), PenCursor::New);
+    assert_eq!(pen_cursor(&app, first), PenCursor::Delete, "the closed path is now editable");
+    assert_eq!(pen_cursor(&app, [150.0, 150.0]), PenCursor::New);
     assert_eq!(app.session.active().unwrap().history.past_len(), history + 1);
     assert_eq!(app.run("path.info", json!({"name": "work"})).unwrap()["path"]["subpaths"][0]["closed"], true);
     anchor(&mut app, [150.0, 150.0]);
@@ -91,6 +93,7 @@ fn pen_cursor_follows_drawing_closing_and_starting_another_path() {
 fn close_cursor_and_press_share_the_zoom_scaled_hit_boundary() {
     for zoom in [0.5, 1.0, 2.0] {
         let mut app = app();
+        app.ui.tool_options.pen_auto_add_delete = false;
         app.ui.views[0].zoom = zoom;
         anchor(&mut app, [40.0, 40.0]);
         anchor(&mut app, [120.0, 40.0]);
@@ -187,6 +190,9 @@ fn native_pen_cursor_changes_at_close_and_clears_for_precise_navigation_and_pane
     assert_eq!(new.hotspot, closing.hotspot);
     click(&mut h, first);
     assert!(h.state().ui.pen.is_none());
+    assert_ne!(h.output().platform_output.cursor_image.as_ref().unwrap().rgba, new.rgba, "the closed anchor advertises Delete");
+    h.hover_at(first + vec2(120.0, 120.0));
+    h.run_steps(2);
     assert_eq!(h.output().platform_output.cursor_image.as_ref().unwrap().rgba, new.rgba);
 
     h.state_mut().run("prefs.set", json!({"path": "cursors.other", "value": "precise"})).unwrap();
@@ -205,4 +211,60 @@ fn native_pen_cursor_changes_at_close_and_clears_for_precise_navigation_and_pane
     h.hover_at(pos2(20.0, 12.0));
     h.run_steps(2);
     assert!(h.output().platform_output.cursor_image.is_none(), "leaving the canvas clears the Pen bitmap");
+}
+
+#[test]
+#[cfg(not(target_arch = "wasm32"))]
+fn native_convert_cursor_keeps_the_captured_action_when_command_is_pressed_mid_drag() {
+    use egui::{Event, Modifiers, PointerButton};
+    use egui_kittest::Harness;
+    for committed in [false, true] {
+        let mut h = Harness::builder().with_size(vec2(600.0, 500.0)).build_ui_state(
+            |ui, app: &mut PhotocraftApp| {
+                if !ui.ctx().fonts(|f| f.families().contains(&egui::FontFamily::Name("medium".into()))) {
+                    return;
+                }
+                egui::CentralPanel::default().show(ui, |ui| crate::canvas::document_area(app, ui));
+            },
+            app(),
+        );
+        PhotocraftApp::setup_context(&h.ctx, Default::default());
+        h.run_steps(4);
+        let first = h.state().last_canvas_rect.center() - vec2(40.0, 40.0);
+        let click = |h: &mut Harness<'_, PhotocraftApp>, pos| {
+            h.hover_at(pos);
+            for pressed in [true, false] {
+                h.event(Event::PointerButton { pos, button: PointerButton::Primary, pressed, modifiers: Modifiers::NONE });
+                h.step();
+            }
+            h.run_steps(2);
+        };
+        for p in [first, first + vec2(80.0, 0.0), first + vec2(80.0, 80.0)] {
+            click(&mut h, p);
+        }
+        if committed {
+            click(&mut h, first);
+        }
+        h.hover_at(first);
+        h.event(Event::ModifiersChanged(Modifiers::ALT));
+        h.run_steps(2);
+        let convert = h.output().platform_output.cursor_image.clone().expect("native Convert cursor before press");
+        h.event(Event::PointerButton { pos: first, button: PointerButton::Primary, pressed: true, modifiers: Modifiers::ALT });
+        h.step();
+        let command = Modifiers { command: true, ctrl: true, ..Default::default() };
+        h.event(Event::ModifiersChanged(command));
+        let to = first + vec2(0.0, 20.0);
+        h.hover_at(to);
+        h.run_steps(2);
+        assert_eq!(
+            h.output().platform_output.cursor_image.as_ref().unwrap().rgba,
+            convert.rgba,
+            "captured Convert wins over mid-drag command: committed={committed}"
+        );
+        assert!(pen_converting(h.state()));
+        h.event(Event::PointerButton { pos: to, button: PointerButton::Primary, pressed: false, modifiers: command });
+        h.run_steps(2);
+        assert!(!pen_converting(h.state()));
+        assert!(h.output().platform_output.cursor_image.is_none(), "idle command returns the system arrow");
+    }
 }

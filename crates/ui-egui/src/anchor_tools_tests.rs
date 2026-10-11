@@ -173,10 +173,12 @@ fn shape_layer_paths_are_edited_and_a_direct_selection_is_cleared() {
 
 #[test]
 fn the_cursor_shows_plus_or_minus() {
-    use crate::tool_feedback::{Badge, badge};
-    let app = app(Tool::AddAnchorPoint);
-    assert_eq!(badge(&app, Tool::AddAnchorPoint, Modifiers::NONE), Some(Badge::Add));
-    assert_eq!(badge(&app, Tool::AddAnchorPoint, Modifiers::ALT), Some(Badge::Subtract));
-    assert_eq!(badge(&app, Tool::DeleteAnchorPoint, Modifiers::NONE), Some(Badge::Subtract));
-    assert_eq!(badge(&app, Tool::DeleteAnchorPoint, Modifiers::COMMAND), None, "⌘ is Direct Selection");
+    use crate::tool_cursor::PenCursor;
+    let mut app = app(Tool::AddAnchorPoint);
+    assert_eq!(crate::vector_ui::pen_cursor_with_modifiers(&app, [0.0; 2], Modifiers::NONE), PenCursor::Add);
+    assert_eq!(crate::vector_ui::pen_cursor_with_modifiers(&app, [0.0; 2], Modifiers::ALT), PenCursor::Delete);
+    app.ui.tool = Tool::DeleteAnchorPoint;
+    assert_eq!(crate::vector_ui::pen_cursor_with_modifiers(&app, [0.0; 2], Modifiers::NONE), PenCursor::Delete);
+    assert_eq!(crate::tool_feedback::badge(&app, Tool::DeleteAnchorPoint, Modifiers::NONE), None, "the native image already contains its badge");
+    assert_eq!(crate::tool_feedback::badge(&app, Tool::DeleteAnchorPoint, Modifiers::COMMAND), None, "⌘ is Direct Selection");
 }

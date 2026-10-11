@@ -17,6 +17,9 @@ pub(crate) enum PenCursor {
     New,
     Draw,
     Close,
+    Add,
+    Delete,
+    Convert,
 }
 
 /// The largest cursor bitmap, in physical pixels; a larger tip paints its outline instead (with a
@@ -78,7 +81,7 @@ pub(crate) fn crosshair(painter: &Painter, at: Pos2, length: f32, gap: f32) -> C
     show(painter, at, Shape::Crosshair { length, gap })
 }
 
-/// The nib stays at the pointer; the new-path or close-path mark moves with the OS cursor too.
+/// Pen and point-editing marks stay at the pointer and move with the OS cursor too.
 pub(crate) fn pen(painter: &Painter, at: Pos2, state: PenCursor) -> CursorIcon {
     let ctx = painter.ctx();
     if native(ctx)

@@ -39,6 +39,14 @@ pub struct PenPath {
     pub(crate) owner: Option<PenOwner>,
     #[serde(skip)]
     pub(crate) commit_failed: bool,
+    #[serde(skip)]
+    pub(crate) edit: Option<pen_edit::DraftDrag>,
+    #[serde(skip)]
+    pub(crate) selected_anchor: Option<usize>,
+    #[serde(skip)]
+    pub(crate) edit_undo: Vec<pen_edit::Undo>,
+    #[serde(skip)]
+    pub(crate) pending_last_handle: Option<photocraft_doc::Path>,
 }
 
 #[derive(Clone, Debug)]
@@ -245,14 +253,14 @@ fn pen_close_at(pen: &PenPath, point: [f64; 2], tolerance: f64) -> bool {
 
 /// Cursor feedback uses the same first-anchor hit test as the closing press. A stale draft
 /// cannot close a path in another document, and dragging a handle keeps the drawing cursor.
+#[cfg(test)]
 pub(crate) fn pen_cursor(app: &PhotocraftApp, point: [f64; 2]) -> crate::tool_cursor::PenCursor {
-    use crate::tool_cursor::PenCursor;
-    let Some(pen) = app.ui.pen.as_ref().filter(|p| p.drawn_with(Tool::Pen) && !p.knots.is_empty() && p.owner.as_ref().is_some_and(|owner| owner.valid(app)))
-    else {
-        return PenCursor::New;
-    };
-    if !pen.dragging && pen_close_at(pen, point, 6.0 / app.point_zoom().max(0.01) as f64) { PenCursor::Close } else { PenCursor::Draw }
+    pen_cursor_with_modifiers(app, point, egui::Modifiers::NONE)
 }
+
+pub(crate) use pen_edit::{converting as pen_converting, cursor as pen_cursor_with_modifiers, pointer as pen_edit_pointer};
+#[path = "pen_edit.rs"]
+mod pen_edit;
 
 fn pen_to_json(pen: &PenPath, closed: bool) -> Value {
     json!({"subpaths": [{"closed": closed, "knots": pen.knots.iter().enumerate().map(|(i, k)| json!({"anchor": k[0], "in": k[1], "out": k[2], "smooth": !pen.unlinked.contains(&i) && (k[1] != k[0] || k[2] != k[0])})).collect::<Vec<_>>()}]})
@@ -287,6 +295,8 @@ pub(crate) fn pen_down_at(app: &mut PhotocraftApp, [x, y]: [f64; 2], close_point
     // Clicking the last anchor breaks its outgoing handle without throwing away the incoming
     // curve. Dragging from that anchor then sets the outgoing handle independently (#1482).
     // This must precede adding a point, or a re-click creates a zero-length segment.
+    let last_hit = pen.knots.last().is_some_and(|last| (last[0][0] - x).hypot(last[0][1] - y) < tol);
+    let previous = last_hit.then(|| pen_edit::path(pen));
     if let Some((i, last)) = pen.knots.len().checked_sub(1).zip(pen.knots.last_mut())
         && (last[0][0] - x).hypot(last[0][1] - y) < tol
     {
@@ -296,8 +306,11 @@ pub(crate) fn pen_down_at(app: &mut PhotocraftApp, [x, y]: [f64; 2], close_point
         }
         pen.dragging = true;
         pen.adjusting_last = true;
+        pen.pending_last_handle = previous;
         return;
     }
+    pen.selected_anchor = None;
+    pen.pending_last_handle = None;
     pen.knots.push([[x, y]; 3]);
     pen.dragging = true;
     pen.adjusting_last = false;
@@ -328,6 +341,22 @@ pub fn pen_undo_last_point(app: &mut PhotocraftApp) -> bool {
         return true;
     }
     let Some(pen) = app.ui.pen.as_mut() else { return false };
+    pen_edit::cancel_drag(pen);
+    if let Some(previous) = pen.pending_last_handle.take() {
+        let changed = pen_edit::path(pen) != previous;
+        pen_edit::restore(pen, previous);
+        pen.dragging = false;
+        pen.adjusting_last = false;
+        if changed {
+            return true;
+        }
+    }
+    if pen_edit::undo(pen) {
+        pen.edit = None;
+        pen.dragging = false;
+        pen.adjusting_last = false;
+        return true;
+    }
     if pen.knots.pop().is_none() {
         return false;
     }
@@ -337,6 +366,7 @@ pub fn pen_undo_last_point(app: &mut PhotocraftApp) -> bool {
         curvature_refresh(pen, false);
     }
     pen.dragging = false;
+    pen.adjusting_last = false;
     if pen.knots.is_empty() {
         app.ui.pen = None;
     }
@@ -348,6 +378,11 @@ pub fn pen_up(app: &mut PhotocraftApp) {
     if let Some(pen) = app.ui.pen.as_mut() {
         pen.dragging = false;
         pen.adjusting_last = false;
+        if let Some(previous) = pen.pending_last_handle.take()
+            && pen_edit::path(pen) != previous
+        {
+            pen_edit::remember(pen, previous);
+        }
     }
 }
 
@@ -358,6 +393,11 @@ pub fn pen_commit(app: &mut PhotocraftApp, closed: bool) {
 
 pub(crate) fn finish_pen_if_left(app: &mut PhotocraftApp) {
     cancel_stale_pen(app);
+    if let Some(pen) = &mut app.ui.pen
+        && !pen.drawn_with(app.ui.tool)
+    {
+        pen_edit::cancel_drag(pen);
+    }
     if app.ui.pen.as_ref().is_some_and(|p| !p.commit_failed && !p.drawn_with(app.ui.tool)) {
         pen_commit(app, false);
     }
@@ -827,12 +867,12 @@ pub fn draw_overlay(app: &PhotocraftApp, painter: &egui::Painter, xf: &ViewXform
         for (i, k) in pen.knots.iter().enumerate() {
             let c = to_scr(k[0]);
             let last = i + 1 == pen.knots.len();
-            if last && k[2] != k[0] && !pen.curvature {
+            if (last || pen.selected_anchor == Some(i)) && (k[1] != k[0] || k[2] != k[0]) && !pen.curvature {
                 for hnd in [k[1], k[2]] {
                     draw_handle(painter, c, to_scr(hnd), accent);
                 }
             }
-            draw_anchor(painter, c, last, accent);
+            draw_anchor(painter, c, last || pen.selected_anchor == Some(i), accent);
         }
     }
 }
@@ -883,6 +923,10 @@ pub fn options_bar(app: &mut PhotocraftApp, ui: &mut egui::Ui, tool: Tool) -> bo
         let opts = [("path".to_string(), tl!("Path")), ("shape".to_string(), tl!("Shape"))];
         crate::widgets::dropdown(ui, "pen-mode", &mut o.vector_mode, &opts, 80.0);
         crate::widgets::vline(ui, 22.0);
+        if tool == Tool::Pen {
+            crate::widgets::checkbox(ui, &mut o.pen_auto_add_delete, tl!("Auto Add/Delete"));
+            crate::widgets::vline(ui, 22.0);
+        }
         if o.vector_mode == "shape" {
             crate::widgets::value_field(ui, &mut o.stroke_width, 0.0..=288.0, "px", 58.0);
             if let Some(change) =
