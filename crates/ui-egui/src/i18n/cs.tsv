@@ -3432,18 +3432,12 @@ cameraRaw	Vibrance	Živost
 cameraRaw	Whites	Bílé
 layerLabel	No Color	Žádná barva
 	Loading fonts…	Načítání písem…
-	Tool	Nástroj
 	Simulate Pressure	Simulovat přítlak
 	Stroke Path…	Vytáhnout cestu…
 	Background Eraser	Guma pozadí
-	Clone Stamp	Klonovací razítko
 	Healing Brush	Retušovací štětec
 	Spot Healing Brush	Bodový retušovací štětec
-	History Brush	Štětec historie
 	Smudge	Rozmazání
-	Dodge	Zesvětlení
-	Burn	Ztmavení
-	Sponge	Houba
 	Amount:	Míra:
 	Protect:	Chránit:
 	Protect skin tones	Chránit tóny pleti
@@ -3475,7 +3469,6 @@ layerLabel	No Color	Žádná barva
 	Create Vector Mask	Vytvořit vektorovou masku
 	Make Selection…	Vytvořit výběr…
 	Fill Path…	Vyplnit cestu…
-	Stroke Path…	Obtáhnout cestu…
 	Clipping Path…	Ořezová cesta…
 	Free Transform Path	Volná transformace cesty
 	Unite Shapes at Overlap	Sjednotit tvary v překryvu
