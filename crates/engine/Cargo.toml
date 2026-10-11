@@ -38,6 +38,11 @@ flate2 = { workspace = true }
 # through photocraft-ui-egui and usvg.
 roxmltree = "0.20"
 
+# The local time that names History Options' snapshot on save (#2966); already in the tree
+# through rmcp. The web build has no local clock here and names it "Snapshot N".
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+chrono = { version = "0.4", default-features = false, features = ["clock"] }
+
 [dev-dependencies]
 photocraft-affinity = { workspace = true, features = ["synth"] }
 # Synthetic camera raw files for the open tests.

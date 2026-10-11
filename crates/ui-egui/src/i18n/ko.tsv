@@ -3170,3 +3170,6 @@ cameraData	Lens	렌즈
 	History Options…	작업 내역 옵션…
 	Allow Non-Linear History	비선형 작업 내역 허용
 	Make Layer Visibility Changes Undoable	레이어 표시 여부 변경을 실행 취소할 수 있게 하기
+	Automatically Create First Snapshot	첫 번째 스냅샷 자동 만들기
+	Automatically Create New Snapshot When Saving	저장할 때 새 스냅샷 자동 만들기
+	Show New Snapshot Dialog by Default	기본적으로 새 스냅샷 대화 상자 표시

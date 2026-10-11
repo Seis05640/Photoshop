@@ -2658,3 +2658,6 @@ cameraData	Lens	Obiettivo
 	History Options…	Opzioni cronologia…
 	Allow Non-Linear History	Consenti cronologia non lineare
 	Make Layer Visibility Changes Undoable	Rendi annullabili le modifiche di visibilità dei livelli
+	Automatically Create First Snapshot	Crea automaticamente prima istantanea
+	Automatically Create New Snapshot When Saving	Crea automaticamente nuova istantanea al salvataggio
+	Show New Snapshot Dialog by Default	Mostra finestra Nuova istantanea per impostazione predefinita

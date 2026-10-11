@@ -2602,3 +2602,6 @@ cameraData	Lens	镜头
 	History Options…	历史记录选项…
 	Allow Non-Linear History	允许非线性历史记录
 	Make Layer Visibility Changes Undoable	允许撤销图层可见性更改
+	Automatically Create First Snapshot	自动创建第一幅快照
+	Automatically Create New Snapshot When Saving	存储时自动创建新快照
+	Show New Snapshot Dialog by Default	默认显示新建快照对话框

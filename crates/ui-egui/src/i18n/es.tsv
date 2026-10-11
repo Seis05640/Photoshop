@@ -2667,3 +2667,6 @@ cameraData	Lens	Objetivo
 	History Options…	Opciones de historia…
 	Allow Non-Linear History	Permitir historia no lineal
 	Make Layer Visibility Changes Undoable	Permitir deshacer los cambios de visibilidad de capas
+	Automatically Create First Snapshot	Crear automáticamente la primera instantánea
+	Automatically Create New Snapshot When Saving	Crear automáticamente una instantánea nueva al guardar
+	Show New Snapshot Dialog by Default	Mostrar el cuadro de diálogo Instantánea nueva de forma predeterminada
