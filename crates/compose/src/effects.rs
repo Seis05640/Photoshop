@@ -14,10 +14,10 @@
 //! of strokes blend onto the backdrop with their own modes, an upper stroke covering the
 //! lower ones. Drop shadows are knocked out only through see-through fill.
 //!
-//! Shapes come from the layer's alpha (after its mask). Strokes and spread / choke measure
-//! distances with a 5 × 5 chamfer metric seeded at sub-pixel edge offsets (as Photoshop does);
-//! precise glows and chiselled bevels use an exact Euclidean distance transform. Soft falloffs
-//! are two box blurs (a tent).
+//! Shapes come from the layer's alpha (after its mask). A stroke's outer edge, and precise glows /
+//! chiselled bevels, use an exact Euclidean transform: a 5 × 5 chamfer's level sets are polygons,
+//! which a wide stroke shows as flat facets (#3646). Inside stroke edges and spread / choke keep the
+//! cheaper chamfer. Soft falloffs are two box blurs (a tent).
 
 use photocraft_color::blend::BlendMode;
 use photocraft_doc::Pattern;
@@ -389,9 +389,9 @@ fn dist_outside(s: &Map) -> Vec<f32> {
 /// Distance metric for effect distance fields.
 #[derive(Clone, Copy, PartialEq)]
 enum Metric {
-    /// Exact Euclidean (precise glows, bevels).
+    /// Exact Euclidean (effect edges).
     Euclidean,
-    /// 5 × 5 chamfer (strokes, spread / choke; see [`chamfer_nearest`]).
+    /// 5 × 5 chamfer (inside strokes, spread / choke; see [`chamfer_nearest`]).
     Chamfer,
 }
 
@@ -1714,10 +1714,14 @@ pub(crate) fn build_maps_prepared(
         .collect();
     let has_stroke = items.iter().any(|e| matches!(e, Effect::Stroke(_)));
     let vector_shape = matches!(layer.content, photocraft_doc::LayerContent::Shape(_));
-    let (din, dout) = if has_stroke { (Some(dist_inside_by(&shape, Metric::Chamfer)), Some(dist_outside_by(&shape, Metric::Chamfer))) } else { (None, None) };
+    // The outer edge uses exact Euclidean distances, not the 5 × 5 chamfer: the chamfer's level
+    // sets are polygons (an ~8-fold octagon here), so a wide stroke's outer boundary shows flat
+    // facets — at 245 px it wanders by ~10 px (#3646). Inside stroke distances keep the chamfer,
+    // whose sub-pixel edge seeding is fitted to Photoshop at small offsets.
+    let (din, dout) = if has_stroke { (Some(dist_inside_by(&shape, Metric::Chamfer)), Some(dist_outside_by(&shape, Metric::Euclidean))) } else { (None, None) };
     // Without an outline (unfilled shapes), estimate the vector outline from local coverage.
     let outline = crate::effect_outline(layer).is_some();
-    let vdout = (has_stroke && vector_shape && !outline).then(|| dist_outside_by(&local_coverage(&shape), Metric::Chamfer));
+    let vdout = (has_stroke && vector_shape && !outline).then(|| dist_outside_by(&local_coverage(&shape), Metric::Euclidean));
     let mut frames: Vec<(u32, Rect)> = Vec::new();
     for e in &items {
         if let Effect::Stroke(st) = e
@@ -2111,14 +2115,18 @@ pub enum FieldKind {
     BevelOutside,
     /// `bevel_dist_inside` of the shape: the inside distance of chiselled bevels.
     BevelInside,
-    /// Chamfer distance outside the shape: outside strokes, and the spread of drop shadows and
-    /// softer outer glows ([`dilate`]).
+    /// Chamfer distance outside the shape: the spread of drop shadows and softer outer glows
+    /// ([`dilate`]); their metric is fitted to Photoshop (#224) and keeps the sub-pixel seeding.
     StrokeOutside,
     /// Chamfer distance outside `1 - alpha`: the choke of inner shadows and softer inner glows.
     ChokeInside,
     /// Stroke distance inside the shape.
     StrokeInside,
-    /// Stroke distance outside a shape layer's outline (from its local coverage).
+    /// Exact Euclidean distance outside the shape: a raster stroke's outer edge. The chamfer's
+    /// level sets are polygons (an ~8-fold octagon), so a wide stroke's outer boundary facets; the
+    /// outer edge is exact while the shadow / glow spread above keeps the chamfer (#3646).
+    StrokeOutsideExact,
+    /// Stroke distance outside a shape layer's outline (from its local coverage), exact Euclidean.
     StrokeOutsideVector,
 }
 
@@ -2134,7 +2142,8 @@ pub fn distance_field(kind: FieldKind, alpha: Vec<f32>, w: usize, h: usize, reac
         FieldKind::StrokeOutside => dist_outside_by(&s, Metric::Chamfer),
         FieldKind::ChokeInside => dist_outside_by(&s.map(|a| 1.0 - a), Metric::Chamfer),
         FieldKind::StrokeInside => dist_inside_by(&s, Metric::Chamfer),
-        FieldKind::StrokeOutsideVector => dist_outside_by(&local_coverage(&s), Metric::Chamfer),
+        FieldKind::StrokeOutsideExact => dist_outside_by(&s, Metric::Euclidean),
+        FieldKind::StrokeOutsideVector => dist_outside_by(&local_coverage(&s), Metric::Euclidean),
     }
 }
 
