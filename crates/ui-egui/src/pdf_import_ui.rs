@@ -81,7 +81,7 @@ impl PhotocraftApp {
         if pages.is_empty() || pages.iter().any(|&i| i >= p.sizes.len()) {
             return Err("Choose at least one valid page".into());
         }
-        let (name, bytes, resolution) = (p.name.clone(), p.bytes.clone(), p.resolution);
+        let (name, bytes, resolution, order) = (p.name.clone(), p.bytes.clone(), p.resolution, p.order);
         self.refocus(target)?;
         photocraft_engine::file_cmds::place_bytes(
             &mut self.session,
@@ -92,6 +92,7 @@ impl PhotocraftApp {
         )
         .map_err(|e| e.to_string())?;
         self.pdf_pickers.pop_front();
+        crate::jobs_ui::discarded_open(&mut self.jobs, order);
         crate::jobs_ui::end_batch(self);
         self.sync_views();
         self.ui.status = format!("Placed {} PDF page(s) as smart objects", pages.len());
@@ -165,7 +166,9 @@ impl PhotocraftApp {
 
     /// Dismiss the current picker without creating or changing a document.
     pub fn cancel_pdf_import(&mut self) {
-        self.pdf_pickers.pop_front();
+        if let Some(picker) = self.pdf_pickers.pop_front() {
+            crate::jobs_ui::discarded_open(&mut self.jobs, picker.order);
+        }
         crate::jobs_ui::end_batch(self);
         self.ui.status = "PDF import cancelled".into();
     }
