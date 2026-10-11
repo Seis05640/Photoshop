@@ -370,11 +370,14 @@ fn main() -> eframe::Result {
                         services::xwayland_command(var("FLATPAK_ID").as_deref(), var("APPIMAGE").as_deref(), std::env::var_os("DISPLAY").is_some());
                 }
             }
-            let mut session = Session::new();
             #[cfg(target_os = "linux")]
-            {
+            let session = {
+                let mut session = Session::new();
                 session.print_spooler = print_portal::spooler();
-            }
+                session
+            };
+            #[cfg(not(target_os = "linux"))]
+            let session = Session::new();
             let mut app = PhotocraftApp::new(session, services);
             app.integrated_titlebar = cfg!(target_os = "macos");
             app.custom_titlebar = custom_titlebar;
