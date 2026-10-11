@@ -116,6 +116,33 @@ fn captured_path_and_shape_mode_do_not_follow_later_ui_selection() {
 }
 
 #[test]
+fn captured_pen_paint_preserves_float_colour_and_alpha_after_toolbar_changes() {
+    for closed in [false, true] {
+        let mut app = app(Tool::Pen);
+        app.ui.tool_options.vector_mode = "shape".into();
+        app.ui.tool_options.shape_fill = true;
+        app.ui.tool_options.stroke_width = 3.0;
+        let foreground = [0.12345, 0.34567, 0.56789, 0.375];
+        let background = [0.76543, 0.54321, 0.32109, 0.625];
+        app.session.tools.foreground = foreground;
+        app.session.tools.background = background;
+        click(&mut app, 30.0, 60.0);
+        app.session.tools.foreground = [1.0; 4];
+        app.session.tools.background = [0.0; 4];
+        click(&mut app, 130.0, 60.0);
+        if closed {
+            click(&mut app, 90.0, 130.0);
+        }
+        vector_ui::pen_commit(&mut app, closed);
+        let st = app.session.active().unwrap();
+        let LayerContent::Shape(shape) = &st.doc.layer(st.active_layer.unwrap()).unwrap().content else { panic!("expected Pen shape") };
+        let paint = |c: [f32; 4]| photocraft_doc::Fill::Solid(photocraft_doc::Color::rgba(c[0], c[1], c[2], c[3]));
+        assert_eq!(shape.fill, closed.then(|| paint(foreground)));
+        assert_eq!(shape.stroke.as_ref().unwrap().paint, paint(if closed { background } else { foreground }));
+    }
+}
+
+#[test]
 fn stale_drafts_are_cancelled_before_tool_switch_or_pointer_input() {
     for tool in [Tool::Pen, Tool::CurvaturePen] {
         for change in ["document", "revision", "reopen"] {
