@@ -4317,6 +4317,7 @@ mod swatch_type_tests {
             dragging: false,
             resize: None,
             preedit: None,
+            ..Default::default()
         });
         let mut h = Harness::builder().with_size(vec2(300.0, 300.0)).build_ui_state(|ui, app: &mut PhotocraftApp| color_picker(app, ui), app);
         h.run_steps(4);
