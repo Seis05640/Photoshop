@@ -3,15 +3,19 @@
 //! through the CPU path); sRGB documents are shown unchanged. Skips when no GPU adapter with
 //! 32-bit float render targets exists (like `crates/gpu/tests/parity.rs`).
 
-use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{Arc, Mutex};
 
 use photocraft_ui_egui::PhotocraftApp;
 use serde_json::json;
 
+// Serialize complete device lifetimes: concurrent software GPU fixtures can crash DX12.
+static GPU_TEST_LOCK: Mutex<()> = Mutex::new(());
+
 /// Renders the UI with one 512² document of `rgb` tagged with `profile`; returns the median
 /// colour of a patch at the centre of the canvas, for the GPU and the CPU canvas.
 fn render(profile: &str, rgb: [f32; 3], reopen: bool) -> Option<([u8; 3], [u8; 3])> {
+    let _gpu = GPU_TEST_LOCK.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
     let float_targets = Arc::new(AtomicBool::new(false));
     let ft = float_targets.clone();
     let observer = Arc::new(std::sync::Mutex::new(None));

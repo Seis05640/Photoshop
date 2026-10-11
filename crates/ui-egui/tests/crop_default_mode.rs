@@ -16,8 +16,12 @@ use photocraft_ui_egui::PhotocraftApp;
 use photocraft_ui_egui::canvas::ViewXform;
 use photocraft_ui_egui::control::{ControlRequest, handle};
 use serde_json::{Value, json};
+use std::sync::Mutex;
 
 type Harness = egui_kittest::Harness<'static, PhotocraftApp>;
+
+// Serialize complete device lifetimes: concurrent software GPU fixtures can crash DX12.
+static GPU_TEST_LOCK: Mutex<()> = Mutex::new(());
 
 fn harness() -> Option<Harness> {
     let built = std::panic::catch_unwind(|| {
@@ -104,6 +108,7 @@ fn setup() -> Option<Harness> {
 
 #[test]
 fn a_ratio_dropdown_updates_the_preview_and_enter_without_touching_a_handle() {
+    let _gpu = GPU_TEST_LOCK.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
     let Some(mut h) = setup() else { return };
     h.get_by_value("Ratio").click();
     h.run_steps(3);
@@ -122,6 +127,7 @@ fn a_ratio_dropdown_updates_the_preview_and_enter_without_touching_a_handle() {
 
 #[test]
 fn the_swap_button_and_x_apply_the_same_inscribed_ratio() {
+    let _gpu = GPU_TEST_LOCK.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
     let Some(mut h) = setup() else { return };
     let original = [30.0, 20.0, 270.0, 180.0];
     h.state_mut().ui.crop_rect = Some(original);
@@ -146,6 +152,7 @@ fn the_swap_button_and_x_apply_the_same_inscribed_ratio() {
 
 #[test]
 fn a_resize_renders_the_frame_and_image_with_the_same_camera() {
+    let _gpu = GPU_TEST_LOCK.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
     let Some(mut h) = setup() else { return };
     let box0 = screen_box(&h);
     let c = mid(box0);
@@ -169,6 +176,7 @@ fn a_resize_renders_the_frame_and_image_with_the_same_camera() {
 
 #[test]
 fn dragging_inside_moves_the_image_and_the_box_stays_centred() {
+    let _gpu = GPU_TEST_LOCK.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
     let Some(mut h) = setup() else { return };
     assert!(!photocraft_ui_egui::crop_ui::pending(h.state()), "the untouched frame");
     let c = h.state().last_canvas_rect.center();
@@ -199,6 +207,7 @@ fn dragging_inside_moves_the_image_and_the_box_stays_centred() {
 
 #[test]
 fn a_resize_keeps_the_box_centre_after_a_space_pan() {
+    let _gpu = GPU_TEST_LOCK.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
     let Some(mut h) = setup() else { return };
     // Space held: the temporary Hand pans the view 80, 40.
     let c = h.state().last_canvas_rect.center();

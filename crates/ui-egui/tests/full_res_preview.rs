@@ -12,8 +12,12 @@ use photocraft_geom::Rect;
 use photocraft_ui_egui::PhotocraftApp;
 use photocraft_ui_egui::control::{ControlRequest, handle};
 use serde_json::{Value, json};
+use std::sync::Mutex;
 
 type Harness = egui_kittest::Harness<'static, PhotocraftApp>;
+
+// Serialize complete device lifetimes: concurrent software GPU fixtures can crash DX12.
+static GPU_TEST_LOCK: Mutex<()> = Mutex::new(());
 
 const W: i32 = 3000;
 const H: i32 = 2000;
@@ -111,6 +115,7 @@ fn mean(r: &[i32]) -> f32 {
 
 #[test]
 fn adjustment_layer_drag_previews_at_full_resolution_when_low_res_is_off() {
+    let _gpu = GPU_TEST_LOCK.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
     let Some(mut h) = harness() else { return };
     setup(&mut h, 1.0);
     if !on_gpu(&mut h) {
@@ -135,6 +140,7 @@ fn adjustment_layer_drag_previews_at_full_resolution_when_low_res_is_off() {
 
 #[test]
 fn filter_dialog_previews_at_full_resolution_when_low_res_is_off() {
+    let _gpu = GPU_TEST_LOCK.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
     let Some(mut h) = harness() else { return };
     setup(&mut h, 1.0);
     if !on_gpu(&mut h) {
@@ -151,6 +157,7 @@ fn filter_dialog_previews_at_full_resolution_when_low_res_is_off() {
 
 #[test]
 fn adjustment_dialog_zoomed_out_skips_the_reduced_copy_when_low_res_is_off() {
+    let _gpu = GPU_TEST_LOCK.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
     let Some(mut h) = harness() else { return };
     setup(&mut h, 0.5);
     if !on_gpu(&mut h) {
