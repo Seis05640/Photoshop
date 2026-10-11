@@ -1,13 +1,15 @@
-//! Direct Selection tool (A, #790), and the Pen's ⌘/Ctrl (Direct Selection) and ⌥/Alt (Convert
-//! Point) modifiers, as in Photoshop. It edits the paths the canvas shows: the targeted vector
-//! mask or the active shape layer's path, and the work or selected saved path.
+//! Direct Selection tool (A, #790), the Convert Point tool (#3204), and the Pen's ⌘/Ctrl (Direct
+//! Selection) and ⌥/Alt (Convert Point) modifiers, as in Photoshop. It edits the paths the canvas
+//! shows: the targeted vector mask or the active shape layer's path, and the work or selected saved path.
 //!
 //! * Click an anchor to select it (⇧ adds or removes, ⌥ selects its whole subpath), drag on empty
 //!   canvas to marquee-select anchors, click empty canvas to deselect.
 //! * Drag selected anchors to move them, a direction handle to turn it (a smooth point keeps its
 //!   handles collinear; ⌥ breaks them apart), or a segment to bend it (straight segments move).
-//! * Pen + ⌥: click an anchor to make it a corner, drag from it to pull out smooth handles, drag a
-//!   handle to move it alone.
+//! * Convert Point (the tool, or Pen + ⌥): click an anchor to make it a corner, drag from it to
+//!   pull out smooth handles, drag a handle to move it alone. The tool selects the anchor it
+//!   converts, so its handles show; a press on empty canvas or a segment does nothing, and ⌘/Ctrl
+//!   is Direct Selection, as with the Pen.
 //!
 //! A drag previews with `photocraft_vector::edit` and commits once on release through the engine
 //! (`path.moveAnchors`, `path.moveHandle`, `path.bendSegment`, `path.convertPoint`): one history
@@ -92,27 +94,41 @@ impl Owner {
             revision: st.revision,
             layer: st.active_layer,
             selected_path: app.ui.selected_path.clone(),
-            vector_mask: app.ui.vector_mask_target,
+            vector_mask: app.ui.vector_mask_target || st.channel_view.target == photocraft_engine::channel_cmds::ChannelTarget::VectorMask,
             tool: app.ui.tool,
         })
     }
 
     fn same_target(&self, app: &PhotocraftApp) -> bool {
-        app.session.active().is_some_and(|st| st.doc.id == self.document && st.active_layer == self.layer)
-            && app.ui.selected_path == self.selected_path
-            && app.ui.vector_mask_target == self.vector_mask
-            && app.ui.tool == self.tool
+        self.same_path_target(app) && app.ui.tool == self.tool
+    }
+
+    fn same_path_target(&self, app: &PhotocraftApp) -> bool {
+        app.session.active().is_some_and(|st| {
+            st.doc.id == self.document
+                && st.active_layer == self.layer
+                && (app.ui.vector_mask_target || st.channel_view.target == photocraft_engine::channel_cmds::ChannelTarget::VectorMask) == self.vector_mask
+        }) && app.ui.selected_path == self.selected_path
     }
 
     fn valid(&self, app: &PhotocraftApp) -> bool {
-        self.same_target(app) && app.session.active().is_some_and(|st| st.revision == self.revision && self.source.ptr_eq(&std::sync::Arc::downgrade(&st.doc)))
+        self.valid_path(app) && app.ui.tool == self.tool
+    }
+
+    fn valid_path(&self, app: &PhotocraftApp) -> bool {
+        self.same_path_target(app)
+            && app.session.active().is_some_and(|st| st.revision == self.revision && self.source.ptr_eq(&std::sync::Arc::downgrade(&st.doc)))
     }
 }
 
 /// Clear stale anchors/gestures, retaining pointer ownership until their old release arrives.
 pub(crate) fn cancel_stale(app: &mut PhotocraftApp) -> bool {
     let ds = &app.ui.direct_selection;
-    let stale = ds.owner.as_ref().map_or(ds.target.is_some() || !ds.anchors.is_empty() || ds.segment.is_some() || ds.drag.is_some(), |owner| !owner.valid(app));
+    let stale = ds.owner.as_ref().map_or(ds.target.is_some() || !ds.anchors.is_empty() || ds.segment.is_some() || ds.drag.is_some(), |owner| {
+        // Convert Point works on the handles selected with Direct Selection. Only idle anchor
+        // selection can cross those tools; a drag retains its original tool ownership.
+        !(owner.valid(app) || (ds.drag.is_none() && owns(owner.tool) && owns(app.ui.tool) && owner.valid_path(app)))
+    });
     if !stale {
         return false;
     }
@@ -168,16 +184,29 @@ impl Edit {
     }
 }
 
-/// Is Direct Selection what the pointer does now: its own tool, or the Pen or an anchor point
-/// tool with ⌘/Ctrl held.
+/// Is Direct Selection what the pointer does now: its own tool, or the Pen, an anchor point tool
+/// or Convert Point with ⌘/Ctrl held.
 fn direct(tool: Tool, mods: Modifiers) -> bool {
-    tool == Tool::DirectSelection || (matches!(tool, Tool::Pen | Tool::AddAnchorPoint | Tool::DeleteAnchorPoint) && mods.command)
+    tool == Tool::DirectSelection || (matches!(tool, Tool::Pen | Tool::AddAnchorPoint | Tool::DeleteAnchorPoint | Tool::ConvertPoint) && mods.command)
+}
+
+/// Is Convert Point what the pointer does now: its own tool, or the Pen with ⌥ held while no path
+/// is being drawn. ⌘/Ctrl wins over both (Direct Selection).
+fn converting(tool: Tool, mods: Modifiers, pen_idle: bool) -> bool {
+    !mods.command && (tool == Tool::ConvertPoint || (tool == Tool::Pen && mods.alt && pen_idle))
+}
+
+/// The tools that take every pointer event on the canvas, not just a press that hits a path.
+fn owns(tool: Tool) -> bool {
+    matches!(tool, Tool::DirectSelection | Tool::ConvertPoint)
 }
 
 /// Does the canvas draw Direct Selection's overlay instead of the plain path outlines? The Add /
 /// Delete Anchor Point tools show it too: they edit the same paths.
 pub fn shows(app: &PhotocraftApp, mods: Modifiers) -> bool {
-    direct(app.ui.tool, mods) || app.ui.direct_selection.drag.is_some() || matches!(app.ui.tool, Tool::AddAnchorPoint | Tool::DeleteAnchorPoint)
+    direct(app.ui.tool, mods)
+        || app.ui.direct_selection.drag.is_some()
+        || matches!(app.ui.tool, Tool::AddAnchorPoint | Tool::DeleteAnchorPoint | Tool::ConvertPoint)
 }
 
 /// The selected work/saved path wins overlapping hits; otherwise the targeted layer is first.
@@ -240,7 +269,7 @@ pub fn pointer(app: &mut PhotocraftApp, ev: ToolEvent, mods: Modifiers) -> bool 
         ToolEvent::Down { x, y, .. } => {
             let pen_idle = app.ui.pen.is_none();
             // Pen + ⌥ is Convert Point only while no path is being drawn.
-            let convert = tool == Tool::Pen && mods.alt && !mods.command && pen_idle;
+            let convert = converting(tool, mods, pen_idle);
             if !(direct(tool, mods) || convert) {
                 return false;
             }
@@ -262,7 +291,7 @@ pub fn pointer(app: &mut PhotocraftApp, ev: ToolEvent, mods: Modifiers) -> bool 
                     *preview = edit.preview(base, *start, *end);
                 }
                 Some(Drag::Marquee { end, .. }) => *end = [x, y],
-                None => return tool == Tool::DirectSelection,
+                None => return owns(tool),
             }
             true
         }
@@ -275,14 +304,15 @@ pub fn pointer(app: &mut PhotocraftApp, ev: ToolEvent, mods: Modifiers) -> bool 
                 marquee(app, start, [x, y], add);
                 true
             }
-            None => tool == Tool::DirectSelection,
+            None => owns(tool),
         },
     }
 }
 
 /// A press: pick what's under the pointer and start a drag. False lets the Pen handle a ⌥-press
-/// that hit nothing.
+/// that hit nothing; the Convert Point tool has nothing else to do, so it keeps the press.
 fn press(app: &mut PhotocraftApp, p: [f64; 2], mods: Modifiers, convert: bool) -> bool {
+    let own_tool = app.ui.tool == Tool::ConvertPoint;
     let tol = 6.0 / f64::from(app.point_zoom().max(0.01));
     let ds = &app.ui.direct_selection;
     let found = candidates(app).into_iter().find_map(|(r, path)| {
@@ -293,7 +323,7 @@ fn press(app: &mut PhotocraftApp, p: [f64; 2], mods: Modifiers, convert: bool) -
     let ds = &mut app.ui.direct_selection;
     let Some((target, base, hit)) = found else {
         if convert {
-            return false;
+            return own_tool;
         }
         ds.drag = Some(Drag::Marquee { start: p, end: p, add: mods.shift });
         ds.owner = owner;
@@ -307,9 +337,17 @@ fn press(app: &mut PhotocraftApp, p: [f64; 2], mods: Modifiers, convert: bool) -
         Hit::Handle(k, h) => {
             let kn = base.subpaths.get(k[0]).and_then(|s| s.knots.get(k[1]));
             let from = kn.map_or(Point::new(p[0], p[1]), |kn| if h == Handle::In { kn.in_ctrl } else { kn.out_ctrl });
-            Edit::Handle(k, h, from, mods.alt)
+            // Converting moves a handle on its own, as ⌥ does with Direct Selection.
+            Edit::Handle(k, h, from, mods.alt || convert)
         }
-        Hit::Anchor(k) if convert => Edit::Convert(k),
+        Hit::Anchor(k) if convert => {
+            if own_tool {
+                // The tool selects the anchor it works on, so the anchor's handles show.
+                ds.segment = None;
+                ds.anchors = vec![k];
+            }
+            Edit::Convert(k)
+        }
         // Pen + ⌥ on a segment does nothing.
         Hit::Segment(..) if convert => return true,
         Hit::Anchor(k) => {
