@@ -80,9 +80,9 @@ fn saved_path_drag_visual_fixture() {
     h.event(Event::PointerMoved(start));
     h.event(button(start, true));
     h.step();
-    assert!(h.state().drag.is_some(), "native press starts a path gesture");
     h.event(Event::PointerMoved(end));
     h.step();
+    assert!(h.state().drag.is_some(), "native movement past the drag threshold starts a path gesture");
     h.event(button(end, false));
     h.step();
     h.run_steps(12);
