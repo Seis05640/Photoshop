@@ -486,11 +486,6 @@
 	Color Range…	Intervalo de cores…
 	Focus Area…	Área de foco…
 	Select and Mask…	Selecionar e mascarar…
-# Select and Mask dialog labels
-	Smart Radius	Raio inteligente
-	Shift Edge	Deslocar borda
-	Decontaminate	Descontaminar
-	Refine Edge	Refinar borda
 	Modify	Modificar
 	Border…	Borda…
 	Smooth…	Suavizar…
@@ -759,7 +754,6 @@
 	Split Warp Horizontally	Dividir deformação horizontalmente
 	Split Warp Vertically	Dividir deformação verticalmente
 	Statistics…	Estatísticas…
-	Refine Strokes	Traços de refinamento
 @plural	{n} item|{n} items	{n} item|{n} itens
 	Auto	Automático
 	(print to the printer)	(imprimir na impressora)
@@ -2989,7 +2983,6 @@ cameraData	Lens	Lente
 	Snap to Origin	Ajustar à origem
 	Search settings…	Pesquisar configurações…
 	No matching settings	Nenhuma configuração encontrada
-	Loading fonts…	Carregando fontes…
 # Select and Mask view modes (#1754)
 	Onion Skin	Papel vegetal
 	Marching Ants	Formigas marchando
@@ -3782,7 +3775,3 @@ layerLabel	No Color	Sem cor
 	Set Colors	Definir cores
 	Switch Foreground and Background Colors	Alternar cores de primeiro plano e plano de fundo
 	Target	Alvo
-# Print dialog (#2697)
-	Emulsion Down	Emulsão para baixo
-	Functions	Funções
-	Print Resolution:	Resolução de impressão:
