@@ -1228,7 +1228,13 @@ async fn convention_resources_are_live_json() {
     assert!(read("photocraft://document").await["document"].is_null());
     json_of(&call(&client, "doc_new", json!({"width":8,"height":6})).await);
     assert_eq!(read("photocraft://document").await["width"], 8);
-    assert_eq!(read("photocraft://commands").await, json_of(&call(&client, "command_list", json!({})).await));
+    // Local undo history keeps Purge All enabled while other tests change global caches.
+    json_of(&call(&client, "command_run", json!({"id":"layer.new.layer", "params":{}})).await);
+    let commands = read("photocraft://commands").await;
+    for id in ["edit.undo", "edit.purge.all"] {
+        assert!(commands.as_array().unwrap().iter().any(|command| command["id"] == id && command["enabled"] == true), "{id} must be enabled by local history");
+    }
+    assert_eq!(commands, json_of(&call(&client, "command_list", json!({})).await));
     assert!(client.read_resource(rmcp::model::ReadResourceRequestParams::new("photocraft://missing")).await.is_err());
     let preview = call(&client, "render_preview", json!({"max_side":4})).await;
     assert!(preview.content.iter().any(|c| c.as_image().is_some()));

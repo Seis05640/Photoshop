@@ -18,6 +18,50 @@
 # the Russian typographic equivalent, with the space the source carries.
 
 # Menus
+# Plural status messages (complete catalog coverage)
+@plural	Exported {n} swatch to {file}|Exported {n} swatches to {file}	Экспортирован {n} образец в {file}|Экспортировано {n} образца в {file}|Экспортировано {n} образцов в {file}
+@plural	Imported {n} brush from {group}|Imported {n} brushes from {group}	Импортирована {n} кисть из {group}|Импортировано {n} кисти из {group}|Импортировано {n} кистей из {group}
+@plural	Imported {n} swatch from {file}|Imported {n} swatches from {file}	Импортирован {n} образец из {file}|Импортировано {n} образца из {file}|Импортировано {n} образцов из {file}
+@plural	Played {n} step|Played {n} steps	Выполнен {n} шаг|Выполнено {n} шага|Выполнено {n} шагов
+@plural	Saved for Web: {n} file|Saved for Web: {n} files	Сохранено для Web: {n} файл|Сохранено для Web: {n} файла|Сохранено для Web: {n} файлов
+@plural	Updated {n} linked smart object changed on disk|Updated {n} linked smart objects changed on disk	Обновлён {n} связанный смарт-объект, изменённый на диске|Обновлено {n} связанных смарт-объекта, изменённых на диске|Обновлено {n} связанных смарт-объектов, изменённых на диске
+@plural	{n} layer recorded by this comp was deleted. Update the comp, or clear the warning.|{n} layers recorded by this comp were deleted. Update the comp, or clear the warning.	Удалён {n} слой, записанный этой композицией. Обновите композицию или уберите предупреждение.|Удалено {n} слоя, записанных этой композицией. Обновите композицию или уберите предупреждение.|Удалено {n} слоёв, записанных этой композицией. Обновите композицию или уберите предупреждение.
+@plural	{n} plane|{n} planes	{n} плоскость|{n} плоскости|{n} плоскостей
+@plural	{n} preset|{n} presets	{n} набор настроек|{n} набора настроек|{n} наборов настроек
+@plural	{n} sample point removed|{n} sample points removed	Удалена {n} точка образца|Удалено {n} точки образца|Удалено {n} точек образца
+@plural	{n} slice|{n} slices	{n} фрагмент|{n} фрагмента|{n} фрагментов
+@plural	{n} step|{n} steps	{n} шаг|{n} шага|{n} шагов
+@plural	{warning} (+{n} more brush preset warning)|{warning} (+{n} more brush preset warnings)	{warning} (ещё {n} предупреждение о наборе кистей)|{warning} (ещё {n} предупреждения о наборах кистей)|{warning} (ещё {n} предупреждений о наборах кистей)
+@plural	{what} with {n} warning|{what} with {n} warnings	{what} с {n} предупреждением|{what} с {n} предупреждениями|{what} с {n} предупреждениями
+
+# PDF import, export and Smart Object painting.
+	Drop an image, PSD or PDF anywhere to open it.	Перетащите изображение, PSD или PDF в любое место окна, чтобы открыть.
+	Each artboard becomes one PDF page. Layers are flattened; transparency is preserved.	Каждая монтажная область становится страницей PDF. Слои объединяются; прозрачность сохраняется.
+	Export All Tabs to PDF…	Экспортировать все вкладки в PDF…
+	Open PDF pages	Открыть страницы PDF
+	{count} pages • Each selected page opens in its own tab	{count} страниц • Каждая выбранная страница откроется в отдельной вкладке
+	Click to select pages. Shift-click selects a range.	Щёлкните для выбора. Shift-щелчок выбирает диапазон.
+	Page {number}	Страница {number}
+	Page {number} — {width} × {height} in	Страница {number} — {width} × {height} дюймов
+	Loading preview…	Загрузка предпросмотра…
+	Resolution (ppi)	Разрешение (ppi)
+	Preview page: {width} × {height} pixels	Страница предпросмотра: {width} × {height} пикселей
+	Pages open as RGB 8-bit images. PDF text and vector objects are rasterized.	Страницы открываются как 8-битные изображения RGB. Текст и векторные объекты PDF растрируются.
+	Open all {count} pages	Открыть все страницы ({count})
+	Open selected ({count})	Открыть выбранные ({count})
+	{count} tabs will be combined in left-to-right tab order.	{count} вкладок будут объединены в порядке слева направо.
+	Current edits are included. Each page keeps its size and resolution.	Текущие изменения включаются. Каждая страница сохраняет размер и разрешение.
+	Close exported tabs after successful export	Закрыть экспортированные вкладки после успешного экспорта
+	Canceled or failed exports leave every tab open.	При отмене или ошибке экспорта все вкладки остаются открытыми.
+	PDF saves the visible pages with flattened layers.	PDF сохраняет видимые страницы со сведёнными слоями.
+	Thumbnail size	Размер миниатюр
+	Ctrl/Cmd-click adds pages. Shift-click selects a range.	Ctrl/Cmd-щелчок добавляет страницы. Shift-щелчок выбирает диапазон.
+	Place PDF pages as smart objects	Поместить страницы PDF как смарт-объекты
+	{count} pages • Each selected page becomes a smart object layer	{count} страниц • Каждая выбранная страница становится слоем смарт-объекта
+	Smart objects contain rasterized pages at this resolution. PDF text and vectors remain rasterized.	Смарт-объекты содержат растрированные страницы в этом разрешении. Текст и векторы PDF остаются растрированными.
+	Place all {count} pages	Поместить все страницы ({count})
+	Place selected ({count})	Поместить выбранные ({count})
+	Smart Objects cannot be painted directly. Rasterize the layer manually or paint on a new pixel layer.	Нельзя рисовать непосредственно на смарт-объектах. Растрируйте слой вручную или рисуйте на новом пиксельном слое.
 
 # Guide layout dialog
 	Rows	Строки
@@ -2788,6 +2832,12 @@ fontWeight	Italic	Курсив
 	Missing delete command	Отсутствует команда удаления
 	Invalid delete command	Недопустимая команда удаления
 	Layer deleted, but confirmation preference could not be saved: {error}	Слой удалён, но не удалось сохранить настройку подтверждения: {error}
+
+
+
+
+
+
 	Add a layer style	Добавить стиль слоя
 	Add a mask  (from the selection; {key} inverts)	Добавить маску  (из выделения; {key} инвертирует)
 	Add an adjustment	Добавить коррекцию

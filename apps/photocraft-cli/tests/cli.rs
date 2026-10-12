@@ -191,7 +191,7 @@ fn run_commands_and_save() {
     assert_eq!(lines[2]["command"], "document.inspect");
     let (info, _) = ok(bin().arg("info").arg(&out_pc));
     let v: Value = serde_json::from_str(&info).unwrap();
-    assert_eq!(v["name"], "Run");
+    assert_eq!(v["name"], "r.pcraft");
     let names: Vec<&str> = v["layers"].as_array().unwrap().iter().filter_map(|l| l["name"].as_str()).collect();
     assert_eq!(names, ["Ink", "Background"]);
     // Continue from the saved file and export PNG.
