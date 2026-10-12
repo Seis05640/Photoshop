@@ -292,7 +292,15 @@ pub(crate) fn invoke_unguarded(app: &mut PhotocraftApp, ctx: &egui::Context, id:
             }
         }
         "file.save" => {
-            // Writes back only to a layered file; a flat one goes through Save As.
+            // A flat PNG or JPEG that is still one plain layer is written back (a JPEG after its
+            // options), as in Photoshop (#2223).
+            if params.get("path").is_none()
+                && app.jpeg_options.is_none()
+                && let Some(r) = app.save_flat_in_place()
+            {
+                return r;
+            }
+            // Otherwise writes back only to a layered file; a flat one goes through Save As.
             let tga_bits = crate::targa_options_ui::bits_param(&params, id)?;
             match params.get("path").and_then(Value::as_str) {
                 Some(path) => app.save_as_with(Some(path.to_string()), tga_bits),
