@@ -162,7 +162,16 @@ pub fn atomic_write_with(fs: &dyn AtomicFs, retry: RenameRetry, path: &Path, byt
 
 /// [`atomic_write_with`] reporting write progress (see [`atomic_write_progress`]).
 pub fn atomic_write_with_progress(fs: &dyn AtomicFs, retry: RenameRetry, path: &Path, bytes: &[u8], progress: &dyn Fn(f32)) -> io::Result<()> {
-    let target = resolve_symlink(path);
+    atomic_write_at_path(fs, retry, path, resolve_symlink(path), bytes, progress)
+}
+
+/// A directory-bundle destination is an owned leaf: replace the link itself,
+/// never the file to which it points. Ordinary writes keep their progress hook.
+pub(crate) fn atomic_write_no_follow(path: &Path, bytes: &[u8]) -> io::Result<()> {
+    atomic_write_at_path(&RealFs, RenameRetry::platform(), path, path.to_path_buf(), bytes, &|_| {})
+}
+
+fn atomic_write_at_path(fs: &dyn AtomicFs, retry: RenameRetry, path: &Path, target: PathBuf, bytes: &[u8], progress: &dyn Fn(f32)) -> io::Result<()> {
     let name = target.file_name().ok_or_else(|| io::Error::new(io::ErrorKind::InvalidInput, format!("{}: not a file path", path.display())))?;
     let dir = match target.parent() {
         Some(d) if !d.as_os_str().is_empty() => d.to_path_buf(),
