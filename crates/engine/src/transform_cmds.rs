@@ -1,6 +1,6 @@
 //! Edit › Free Transform / Transform: projective transforms of layers (and the selection).
 
-use photocraft_algo::transform::{Homography, Interp, warp_surface};
+use photocraft_algo::transform::{Homography, Interp, warp_surface, warp_surface_clipped};
 use photocraft_color::PixelFormat;
 use photocraft_doc::{Document, Layer, LayerContent, LayerId, Locks};
 use photocraft_geom::{Affine, Rect};
@@ -44,6 +44,28 @@ pub fn transform_bounds(doc: &Document, layer: &Layer) -> Rect {
 /// Warp a surface whose pixels outside the content read as `default` (masks, selections):
 /// warp the content with alpha, then flatten back onto the default value.
 pub(crate) fn warp_gray(s: &Surface, h: &Homography, interp: Interp) -> Result<Surface> {
+    warp_gray_within(s, h, interp, None)
+}
+
+/// Where a Free Transform keeps pixels: the canvas and one canvas size around it on every side,
+/// plus wherever the content already was. Pixels pushed past that are dropped, so a huge scale
+/// (a 1 px column stretched 100000%, #3773) costs at most a few canvases of memory and time
+/// instead of the whole stretched extent.
+pub fn transform_keep(doc: &Document) -> Rect {
+    let (w, h) = (doc.size.width.min(i32::MAX as u32 / 3) as i32, doc.size.height.min(i32::MAX as u32 / 3) as i32);
+    Rect::new(-w, -h, 2 * w, 2 * h)
+}
+
+/// [`warp_surface`] keeping only the result inside `keep` (grown to cover `src`), or all of it.
+fn warp_within(surf: &Surface, src: Rect, h: &Homography, interp: Interp, keep: Option<Rect>) -> Result<Surface> {
+    Ok(match keep {
+        Some(k) => warp_surface_clipped(surf, src, h, interp, k.union(&src))?,
+        None => warp_surface(surf, src, h, interp)?,
+    })
+}
+
+/// [`warp_gray`] keeping only the result inside `keep` (see [`warp_within`]).
+pub(crate) fn warp_gray_within(s: &Surface, h: &Homography, interp: Interp, keep: Option<Rect>) -> Result<Surface> {
     let default = s.default_pixel().first().copied().unwrap_or(0.0);
     let fmt = s.format();
     let src = s.content_bounds();
@@ -62,7 +84,7 @@ pub(crate) fn warp_gray(s: &Surface, h: &Homography, interp: Interp) -> Result<S
         px.copy_from_slice(&[*g, 1.0]);
     }
     tmp.try_write_region(src, &lifted)?;
-    let w = warp_surface(&tmp, src, h, interp)?;
+    let w = warp_within(&tmp, src, h, interp, keep)?;
     // Clear the old content region, then composite the warped content over it. These are written as
     // two sparse regions rather than one dense `src ∪ warped` block: a transform that moves the
     // content far away (e.g. a huge translation) would otherwise allocate a buffer spanning both and
@@ -122,8 +144,8 @@ pub fn split_gray_selected(s: &Surface, sel: &Surface) -> Result<Option<(Surface
 
 /// [`warp_gray`] limited to a selection: only the selected values move (the vacated area reads as
 /// the default), as the selected pixels of the layer do.
-pub(crate) fn warp_gray_selected(s: &Surface, sel: &Surface, h: &Homography, interp: Interp) -> Result<Surface> {
-    move_gray_selected(s, sel, &|lifted, src| Ok(warp_surface(lifted, src, h, interp)?), &|s| warp_gray(s, h, interp))
+pub(crate) fn warp_gray_selected(s: &Surface, sel: &Surface, h: &Homography, interp: Interp, keep: Option<Rect>) -> Result<Surface> {
+    move_gray_selected(s, sel, &|lifted, src| warp_within(lifted, src, h, interp, keep), &|s| warp_gray_within(s, h, interp, keep))
 }
 
 /// [`warp_gray_selected`] with any geometric warp: `warp` moves the lifted grey + alpha values
@@ -232,6 +254,20 @@ pub fn locked_for_transform(doc: &Document, id: LayerId) -> bool {
 
 /// `group` holds the locks `l` inherits from the groups around it ([`group_locks`]).
 pub(crate) fn transform_layer(doc_sel: Option<&Surface>, group: Locks, l: &mut Layer, h: &Homography, affine: Option<Affine>, interp: Interp) -> Result<()> {
+    transform_layer_within(doc_sel, group, l, h, affine, interp, None)
+}
+
+/// [`transform_layer`] keeping the moved pixels only inside `keep` ([`transform_keep`]).
+#[allow(clippy::too_many_arguments)]
+fn transform_layer_within(
+    doc_sel: Option<&Surface>,
+    group: Locks,
+    l: &mut Layer,
+    h: &Homography,
+    affine: Option<Affine>,
+    interp: Interp,
+    keep: Option<Rect>,
+) -> Result<()> {
     crate::allocation::checkpoint("transforming pixels")?;
     let locks = transform_locks(l, group);
     // Photoshop turns the Background into a normal layer before transforming it.
@@ -246,7 +282,7 @@ pub(crate) fn transform_layer(doc_sel: Option<&Surface>, group: Locks, l: &mut L
     if h.is_identity() {
         if let LayerContent::Group(g) = &mut l.content {
             for c in g.children.iter_mut() {
-                transform_layer(None, locks, c, h, affine, interp)?;
+                transform_layer_within(None, locks, c, h, affine, interp, keep)?;
             }
         }
         return Ok(());
@@ -257,7 +293,7 @@ pub(crate) fn transform_layer(doc_sel: Option<&Surface>, group: Locks, l: &mut L
     match &mut l.content {
         LayerContent::Group(g) => {
             for c in g.children.iter_mut() {
-                transform_layer(None, locks, c, h, affine, interp)?;
+                transform_layer_within(None, locks, c, h, affine, interp, keep)?;
             }
         }
         LayerContent::Text(t) => {
@@ -282,25 +318,25 @@ pub(crate) fn transform_layer(doc_sel: Option<&Surface>, group: Locks, l: &mut L
             // Fallback appearance for sources that can't be re-rendered.
             if let Some(c) = &mut sm.cache {
                 let src = c.content_bounds();
-                *c = warp_surface(c, src, h, interp)?;
+                *c = warp_within(c, src, h, interp, keep)?;
             }
             if let Some(m) = &mut sm.filter_mask {
-                m.surface = warp_gray(&m.surface, h, interp)?;
+                m.surface = warp_gray_within(&m.surface, h, interp, keep)?;
             }
         }
         _ => {
             if let Some(surf) = l.surface_mut() {
-                let src = surf.content_bounds();
                 *surf = match doc_sel {
-                    // Only the selected pixels move: lift them, clear them, warp and paste back.
+                    // Only the selected pixels move: lift them, clear them, warp and paste back. The
+                    // lifted pixels' own bounds are the edge a stretch repeats (#3773).
                     Some(sel) => {
                         let (lifted, mut rest) = split_selected(surf, sel)?;
-                        let moved = warp_surface(&lifted, src, h, interp)?;
+                        let moved = warp_within(&lifted, lifted.content_bounds(), h, interp, keep)?;
                         composite_over(&mut rest, &moved);
                         rest.prune();
                         rest
                     }
-                    None => warp_surface(surf, src, h, interp)?,
+                    None => warp_within(surf, surf.content_bounds(), h, interp, keep)?,
                 };
             }
         }
@@ -309,8 +345,8 @@ pub(crate) fn transform_layer(doc_sel: Option<&Surface>, group: Locks, l: &mut L
         && m.linked
     {
         m.surface = match mask_sel {
-            Some(sel) => warp_gray_selected(&m.surface, sel, h, interp)?,
-            None => warp_gray(&m.surface, h, interp)?,
+            Some(sel) => warp_gray_selected(&m.surface, sel, h, interp, keep)?,
+            None => warp_gray_within(&m.surface, h, interp, keep)?,
         };
     }
     if let Some(vm) = l.vector_mask.as_mut()
@@ -352,6 +388,11 @@ pub fn split_selected(surf: &Surface, sel: &Surface) -> Result<(Surface, Surface
         let k = sel.sample_channel(x, y, 0);
         l[n - 1] *= k;
         r[n - 1] *= 1.0 - k;
+        // Likewise an unselected pixel leaves nothing in the lifted surface, so its bounds are the
+        // selected pixels' (what a stretch repeats at the edge, #3773).
+        if l[n - 1] <= 0.0 {
+            l.fill(0.0);
+        }
         if r[n - 1] <= 0.0 {
             r.iter_mut().zip(&rest_clear).for_each(|(d, c)| *d = *c);
         }
@@ -476,16 +517,17 @@ fn transform(s: &mut Session, p: &Value) -> Result<Value> {
     let lone = lone.is_some();
     s.edit("Free Transform", |doc, _| {
         let sel = doc.selection.clone();
+        let keep = Some(transform_keep(doc));
         if lone {
             // A targeted unlinked mask, alpha channel or Quick Mask transforms by itself.
             if !h.is_identity() {
                 let (surf, _) = crate::channel_cmds::target_surface(doc, id, p)?;
                 *surf = match &sel {
-                    Some(sel) => warp_gray_selected(surf, sel, &h, interp)?,
-                    None => warp_gray(surf, &h, interp)?,
+                    Some(sel) => warp_gray_selected(surf, sel, &h, interp, keep)?,
+                    None => warp_gray_within(surf, &h, interp, keep)?,
                 };
                 if let Some(sel) = &doc.selection {
-                    doc.selection = Some(warp_gray(sel, &h, Interp::Bilinear)?).filter(|s| !s.content_bounds().is_empty());
+                    doc.selection = Some(warp_gray_within(sel, &h, Interp::Bilinear, keep)?).filter(|s| !s.content_bounds().is_empty());
                 }
             }
             return Ok(());
@@ -494,7 +536,7 @@ fn transform(s: &mut Session, p: &Value) -> Result<Value> {
         let is_group = doc.layer(id).is_some_and(Layer::is_group);
         let group = group_locks(doc, id);
         let l = doc.layer_mut(id).ok_or(EngineError::NoLayer(id))?;
-        transform_layer(if is_group { None } else { sel.as_ref() }, group, l, &h, affine, interp)?;
+        transform_layer_within(if is_group { None } else { sel.as_ref() }, group, l, &h, affine, interp, keep)?;
         if !h.is_identity() {
             // Type layers re-render from their new transform.
             let snapshot = doc.clone();
@@ -503,7 +545,7 @@ fn transform(s: &mut Session, p: &Value) -> Result<Value> {
             }
             // The selection outline moves with the pixels.
             if let Some(sel) = &doc.selection {
-                doc.selection = Some(warp_gray(sel, &h, Interp::Bilinear)?).filter(|s| !s.content_bounds().is_empty());
+                doc.selection = Some(warp_gray_within(sel, &h, Interp::Bilinear, keep)?).filter(|s| !s.content_bounds().is_empty());
             }
         }
         Ok(())
@@ -926,5 +968,75 @@ mod tests {
         // Locked layer still refuses transform even if identity.
         s.execute("layer.setProps", json!({"locks": {"position": true}})).unwrap();
         assert!(s.execute("edit.transform", json!({"matrix": [1, 0, 0, 1, 0, 0]})).is_err(), "locked layer refuses identity transform");
+    }
+
+    /// A 1 x 8 px column on a 256 x 256 canvas (#3773).
+    fn column_session() -> Session {
+        let mut s = Session::new();
+        s.execute("file.new", json!({"width": 256, "height": 256})).unwrap();
+        s.execute("layer.new.layer", json!({})).unwrap();
+        s.edit("paint", |doc, active| {
+            let l = doc.layer_mut(active.unwrap()).unwrap();
+            l.surface_mut().unwrap().fill_rect(Rect::new(100, 100, 101, 108), &[0.0, 1.0, 0.0, 1.0]);
+            Ok(())
+        })
+        .unwrap();
+        s
+    }
+
+    fn opaque_green(s: &Session, x: i32, y: i32) -> bool {
+        let st = s.active().unwrap();
+        let surf = st.doc.layer(st.active_layer.unwrap()).unwrap().surface().unwrap();
+        (surf.sample_channel(x, y, 1) - 1.0).abs() < 1e-3 && (surf.sample_channel(x, y, 3) - 1.0).abs() < 1e-3
+    }
+
+    /// The "pixel stretch" (#3773): scales far past 1000% are taken, and the stretched column stays
+    /// solid along its whole length.
+    #[test]
+    fn a_one_pixel_column_stretches_5000_percent() {
+        let mut s = column_session();
+        s.execute("edit.transform", json!({"quad": [[100, 100], [150, 100], [150, 108], [100, 108]]})).unwrap();
+        assert_eq!(active_bounds(&s), Rect::new(100, 100, 150, 108));
+        for x in [100, 101, 125, 149] {
+            for y in 100..108 {
+                assert!(opaque_green(&s, x, y), "({x}, {y})");
+            }
+        }
+    }
+
+    /// 100000% both ways asks for 1000 x 8000 px; only the canvas and a canvas around it are kept,
+    /// so the result (and the work) stays a few canvases big.
+    #[test]
+    fn a_huge_stretch_is_kept_near_the_canvas() {
+        let mut s = column_session();
+        let q = |x: f64, y: f64| [100.5 + (x - 100.5) * 1000.0, 104.0 + (y - 104.0) * 1000.0];
+        s.execute("edit.transform", json!({"quad": [q(100.0, 100.0), q(101.0, 100.0), q(101.0, 108.0), q(100.0, 108.0)]})).unwrap();
+        assert_eq!(active_bounds(&s), Rect::new(-256, -256, 512, 512));
+        for (x, y) in [(0, 0), (128, 128), (255, 255), (-256, 511)] {
+            assert!(opaque_green(&s, x, y), "({x}, {y})");
+        }
+    }
+
+    /// The technique as done in Photoshop: select a 1 px column of an image and stretch it across.
+    #[test]
+    fn a_selected_column_stretches_solid_over_the_image() {
+        let mut s = Session::new();
+        s.execute("file.new", json!({"width": 256, "height": 256})).unwrap();
+        s.execute("layer.new.layer", json!({})).unwrap();
+        s.edit("paint", |doc, active| {
+            let surf = doc.layer_mut(active.unwrap()).unwrap().surface_mut().unwrap();
+            surf.fill_rect(Rect::new(0, 0, 256, 256), &[1.0, 0.0, 0.0, 1.0]);
+            surf.fill_rect(Rect::new(10, 0, 11, 256), &[0.0, 1.0, 0.0, 1.0]);
+            Ok(())
+        })
+        .unwrap();
+        s.execute("select.rect", json!({"x": 10, "y": 0, "width": 1, "height": 256})).unwrap();
+        s.execute("edit.transform", json!({"quad": [[10, 0], [250, 0], [250, 256], [10, 256]]})).unwrap();
+        for x in [10, 11, 100, 200, 249] {
+            assert!(opaque_green(&s, x, 128), "x = {x}");
+        }
+        let st = s.active().unwrap();
+        let surf = st.doc.layer(st.active_layer.unwrap()).unwrap().surface().unwrap();
+        assert!(surf.sample_channel(250, 128, 0) > 0.999 && surf.sample_channel(9, 128, 0) > 0.999, "the image either side is untouched");
     }
 }
