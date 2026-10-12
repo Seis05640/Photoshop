@@ -245,11 +245,23 @@ pub struct ExportSettings {
     /// PSD/PSB: embed a thumbnail (Preferences › File Handling › Image Previews; see
     /// [`PhotocraftApp::save_settings`]).
     pub image_previews: bool,
+    /// PSD/PSB: write the real merged image (Preferences › File Handling › Maximize PSD and PSB
+    /// File Compatibility; see [`PhotocraftApp::save_settings`]).
+    pub psd_maximize_compatibility: bool,
 }
 
 impl Default for ExportSettings {
     fn default() -> Self {
-        ExportSettings { jpeg_quality: None, webp_lossless: true, webp_quality: None, tiff_layers: true, xmp_all: true, tga_bits: None, image_previews: true }
+        ExportSettings {
+            jpeg_quality: None,
+            webp_lossless: true,
+            webp_quality: None,
+            tiff_layers: true,
+            xmp_all: true,
+            tga_bits: None,
+            image_previews: true,
+            psd_maximize_compatibility: true,
+        }
     }
 }
 
@@ -1278,11 +1290,14 @@ impl PhotocraftApp {
     }
 
     /// What a save writes by default under the preferences: File Handling › Image Previews
-    /// decides whether a PSD/PSB gets its thumbnail. Ask When Saving has no Save As checkbox
-    /// here yet, so it saves the preview, as Photoshop's checkbox starts on.
+    /// decides whether a PSD/PSB gets its thumbnail, and Maximize PSD and PSB File Compatibility
+    /// whether it gets its real merged image. Ask When Saving has no dialog here yet, so it saves
+    /// both, as Photoshop's checkboxes start on.
     pub(crate) fn save_settings(&self) -> ExportSettings {
-        let previews = self.session.prefs().file_handling.image_previews != photocraft_engine::prefs::Ask::Never;
-        ExportSettings { image_previews: previews, ..ExportSettings::default() }
+        let file_handling = &self.session.prefs().file_handling;
+        let previews = file_handling.image_previews != photocraft_engine::prefs::Ask::Never;
+        let maximize = file_handling.maximize_psd_compatibility != photocraft_engine::prefs::Ask::Never;
+        ExportSettings { image_previews: previews, psd_maximize_compatibility: maximize, ..ExportSettings::default() }
     }
 
     /// Whether saving the active document to `path` writes a copy. `tiff_layers` is the TIFF
