@@ -2723,3 +2723,8 @@ curves	Smooth	Suavizar
 @plural	{n} step|{n} steps	{n} paso|{n} pasos
 @plural	{warning} (+{n} more brush preset warning)|{warning} (+{n} more brush preset warnings)	{warning} (+{n} advertencia más de ajustes preestablecidos de pincel)|{warning} (+{n} advertencias más de ajustes preestablecidos de pincel)
 @plural	{what} with {n} warning|{what} with {n} warnings	{what} con {n} advertencia|{what} con {n} advertencias
+	Pro Medium Gray	Pro (gris medio)
+	Solarized	Solarized
+	Breeze	Breeze
+	Pro Light Gray	Pro (gris claro)
+	Pro Light	Pro (claro)
