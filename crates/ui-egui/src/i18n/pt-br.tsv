@@ -15,6 +15,22 @@
 # entries the same way. Product and technology names (PhotoCraft, ArtCraft, OpenType, CMYK, Lab ...)
 # stay as they are; the trailing "…" of dialog commands is kept.
 
+# Plural status messages (complete catalog coverage)
+@plural	Exported {n} swatch to {file}|Exported {n} swatches to {file}	{n} amostra exportada para {file}|{n} amostras exportadas para {file}
+@plural	Imported {n} brush from {group}|Imported {n} brushes from {group}	{n} pincel importado de {group}|{n} pincéis importados de {group}
+@plural	Imported {n} swatch from {file}|Imported {n} swatches from {file}	{n} amostra importada de {file}|{n} amostras importadas de {file}
+@plural	Played {n} step|Played {n} steps	{n} etapa executada|{n} etapas executadas
+@plural	Saved for Web: {n} file|Saved for Web: {n} files	Salvo para Web: {n} arquivo|Salvo para Web: {n} arquivos
+@plural	Updated {n} linked smart object changed on disk|Updated {n} linked smart objects changed on disk	{n} objeto inteligente vinculado alterado no disco atualizado|{n} objetos inteligentes vinculados alterados no disco atualizados
+@plural	{n} layer recorded by this comp was deleted. Update the comp, or clear the warning.|{n} layers recorded by this comp were deleted. Update the comp, or clear the warning.	{n} camada registrada por esta composição foi excluída. Atualize a composição ou remova o aviso.|{n} camadas registradas por esta composição foram excluídas. Atualize a composição ou remova o aviso.
+@plural	{n} plane|{n} planes	{n} plano|{n} planos
+@plural	{n} preset|{n} presets	{n} predefinição|{n} predefinições
+@plural	{n} sample point removed|{n} sample points removed	{n} ponto de amostra removido|{n} pontos de amostra removidos
+@plural	{n} slice|{n} slices	{n} fatia|{n} fatias
+@plural	{n} step|{n} steps	{n} etapa|{n} etapas
+@plural	{warning} (+{n} more brush preset warning)|{warning} (+{n} more brush preset warnings)	{warning} (+{n} aviso de predefinição de pincel)|{warning} (+{n} avisos de predefinições de pincel)
+@plural	{what} with {n} warning|{what} with {n} warnings	{what} com {n} aviso|{what} com {n} avisos
+
 # PDF import, export and Smart Object painting.
 	Drop an image, PSD or PDF anywhere to open it.	Solte uma imagem, PSD ou PDF em qualquer lugar para abri-lo.
 	Each artboard becomes one PDF page. Layers are flattened; transparency is preserved.	Cada prancheta se torna uma página PDF. As camadas são achatadas; a transparência é preservada.
@@ -1958,6 +1974,7 @@
 	Show only crosshair while painting	Mostrar apenas a mira ao pintar
 	Show slice numbers	Mostrar números das fatias
 	Show tooltips	Mostrar dicas de ferramentas
+	Enable animations	Ativar animações
 	Show highlight on rollover	Mostrar realce ao passar o mouse
 	Show transformation values	Mostrar valores de transformação
 	Slice color	Cor das fatias
@@ -3037,6 +3054,11 @@ cameraData	Lens	Lente
 	Amount:	Quantidade:
 	Protect:	Proteger:
 	Protect skin tones	Proteger tons de pele
+	Edit points to modify the curve	Editar pontos para modificar a curva
+	Draw to modify the curve	Desenhar para modificar a curva
+curves	Smooth	Suavizar
+	Smooth the curve values	Suavizar os valores da curva
+	Drag to draw the curve · {key}-click draws a straight line	Arraste para desenhar a curva · {key}-clique traça uma linha reta
 # Select and Mask view modes (#1754)
 	Onion Skin	Papel vegetal
 	Marching Ants	Formigas marchando
@@ -3836,19 +3858,6 @@ layerLabel	No Color	Sem cor
 	Fill with {mode}-neutral color (black)	Preencher com a cor neutra de {mode} (preto)
 	Fill with {mode}-neutral color (50% gray)	Preencher com a cor neutra de {mode} (cinza 50%)
 	(No neutral color exists for {mode} mode.)	(Não existe cor neutra para o modo {mode}.)
-
-# Plural status messages (complete catalog coverage)
-@plural	Exported {n} swatch to {file}|Exported {n} swatches to {file}	{n} amostra exportada para {file}|{n} amostras exportadas para {file}
-@plural	Imported {n} brush from {group}|Imported {n} brushes from {group}	{n} pincel importado de {group}|{n} pincéis importados de {group}
-@plural	Imported {n} swatch from {file}|Imported {n} swatches from {file}	{n} amostra importada de {file}|{n} amostras importadas de {file}
-@plural	Played {n} step|Played {n} steps	{n} etapa executada|{n} etapas executadas
-@plural	Saved for Web: {n} file|Saved for Web: {n} files	Salvo para Web: {n} arquivo|Salvo para Web: {n} arquivos
-@plural	Updated {n} linked smart object changed on disk|Updated {n} linked smart objects changed on disk	{n} objeto inteligente vinculado alterado no disco atualizado|{n} objetos inteligentes vinculados alterados no disco atualizados
-@plural	{n} layer recorded by this comp was deleted. Update the comp, or clear the warning.|{n} layers recorded by this comp were deleted. Update the comp, or clear the warning.	{n} camada registrada por esta composição foi excluída. Atualize a composição ou remova o aviso.|{n} camadas registradas por esta composição foram excluídas. Atualize a composição ou remova o aviso.
-@plural	{n} plane|{n} planes	{n} plano|{n} planos
-@plural	{n} preset|{n} presets	{n} predefinição|{n} predefinições
-@plural	{n} sample point removed|{n} sample points removed	{n} ponto de amostra removido|{n} pontos de amostra removidos
-@plural	{n} slice|{n} slices	{n} fatia|{n} fatias
-@plural	{n} step|{n} steps	{n} etapa|{n} etapas
-@plural	{warning} (+{n} more brush preset warning)|{warning} (+{n} more brush preset warnings)	{warning} (+{n} aviso de predefinição de pincel)|{warning} (+{n} avisos de predefinições de pincel)
-@plural	{what} with {n} warning|{what} with {n} warnings	{what} com {n} aviso|{what} com {n} avisos
+	Apply mask to layer before removing?	Aplicar a máscara à camada antes de removê-la?
+	The layer or its mask changed. Drag the mask onto the Trash again.	A camada ou a máscara mudou. Arraste a máscara para a Lixeira novamente.
+	Delete the vector mask?	Excluir a máscara vetorial?

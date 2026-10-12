@@ -1983,6 +1983,7 @@
 	Show only crosshair while painting	Podczas malowania pokaż tylko celownik
 	Show slice numbers	Pokaż numery plasterków
 	Show tooltips	Pokaż podpowiedzi
+	Enable animations	Włącz animacje
 	Show highlight on rollover	Pokaż podświetlenie po najechaniu
 	Show bounding box when dragging layer	Pokaż ramkę ograniczającą podczas przeciągania warstwy
 	Show transformation values	Pokaż wartości przekształcenia
@@ -3628,6 +3629,11 @@ cameraData	Lens	Obiektyw
 	Amount:	Wartość:
 	Protect:	Chroń:
 	Protect skin tones	Chroń odcienie skóry
+	Edit points to modify the curve	Edytuj punkty, aby zmienić krzywą
+	Draw to modify the curve	Rysuj, aby zmienić krzywą
+curves	Smooth	Wygładź
+	Smooth the curve values	Wygładź wartości krzywej
+	Drag to draw the curve · {key}-click draws a straight line	Przeciągnij, aby narysować krzywą · {key}-klik rysuje linię prostą
 # Select and Mask view modes (#1754)
 	Onion Skin	Skórka cebuli
 	Marching Ants	Maszerujące mrówki
@@ -3658,3 +3664,6 @@ cameraData	Lens	Obiektyw
 	Fill with {mode}-neutral color (black)	Wypełnij kolorem neutralnym dla trybu {mode} (czarny)
 	Fill with {mode}-neutral color (50% gray)	Wypełnij kolorem neutralnym dla trybu {mode} (50% szarości)
 	(No neutral color exists for {mode} mode.)	(Dla trybu {mode} nie istnieje kolor neutralny.)
+	Apply mask to layer before removing?	Zastosować maskę do warstwy przed usunięciem?
+	The layer or its mask changed. Drag the mask onto the Trash again.	Warstwa lub jej maska uległa zmianie. Przeciągnij maskę ponownie do kosza.
+	Delete the vector mask?	Usunąć maskę wektorową?

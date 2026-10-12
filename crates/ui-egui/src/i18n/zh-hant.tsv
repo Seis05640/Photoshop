@@ -19,6 +19,22 @@
 # kept. Full-width punctuation (，。：) inside sentences; half-width parentheses and the " · "
 # separators as in the English.
 
+# Plural status messages (complete catalog coverage)
+@plural	Exported {n} swatch to {file}|Exported {n} swatches to {file}	已將 {n} 個色票匯出至 {file}
+@plural	Imported {n} brush from {group}|Imported {n} brushes from {group}	已從 {group} 匯入 {n} 個筆刷
+@plural	Imported {n} swatch from {file}|Imported {n} swatches from {file}	已從 {file} 匯入 {n} 個色票
+@plural	Played {n} step|Played {n} steps	已執行 {n} 個步驟
+@plural	Saved for Web: {n} file|Saved for Web: {n} files	已為網頁儲存 {n} 個檔案
+@plural	Updated {n} linked smart object changed on disk|Updated {n} linked smart objects changed on disk	已更新 {n} 個在磁碟上變更的連結智慧型物件
+@plural	{n} layer recorded by this comp was deleted. Update the comp, or clear the warning.|{n} layers recorded by this comp were deleted. Update the comp, or clear the warning.	此圖層構圖記錄的 {n} 個圖層已刪除。請更新圖層構圖，或清除此警告。
+@plural	{n} plane|{n} planes	{n} 個平面
+@plural	{n} preset|{n} presets	{n} 個預設
+@plural	{n} sample point removed|{n} sample points removed	已移除 {n} 個取樣點
+@plural	{n} slice|{n} slices	{n} 個切片
+@plural	{n} step|{n} steps	{n} 個步驟
+@plural	{warning} (+{n} more brush preset warning)|{warning} (+{n} more brush preset warnings)	{warning}（另有 {n} 個筆刷預設警告）
+@plural	{what} with {n} warning|{what} with {n} warnings	{what}，有 {n} 個警告
+
 # PDF import, export and Smart Object painting.
 	Drop an image, PSD or PDF anywhere to open it.	將影像、PSD 或 PDF 拖放到任何位置即可開啟。
 	Each artboard becomes one PDF page. Layers are flattened; transparency is preserved.	每個工作區域會成為一頁 PDF。圖層會合併，透明度會保留。
@@ -1993,6 +2009,7 @@
 	Show only crosshair while painting	繪圖時僅顯示十字線
 	Show slice numbers	顯示切片編號
 	Show tooltips	顯示工具提示
+	Enable animations	啟用動畫
 	Show highlight on rollover	滑鼠懸停時顯示醒目提示
 	Show bounding box when dragging layer	拖曳圖層時顯示邊界框
 	System title bar	系統標題列
@@ -2598,6 +2615,11 @@ cameraData	Lens	鏡頭
 	Amount:	總量：
 	Protect:	保護：
 	Protect skin tones	保護膚色
+	Edit points to modify the curve	編輯點以修改曲線
+	Draw to modify the curve	繪製以修改曲線
+curves	Smooth	平滑
+	Smooth the curve values	平滑曲線數值
+	Drag to draw the curve · {key}-click draws a straight line	拖曳以繪製曲線 · 按住 {key} 按一下可繪製直線
 # Select and Mask view modes (#1754)
 	Onion Skin	洋蔥皮
 	Marching Ants	螞蟻線
@@ -2634,19 +2656,6 @@ cameraData	Lens	鏡頭
 	Fill with {mode}-neutral color (black)	使用{mode}中性色填滿（黑色）
 	Fill with {mode}-neutral color (50% gray)	使用{mode}中性色填滿（50% 灰色）
 	(No neutral color exists for {mode} mode.)	（{mode}模式沒有中性色。）
-
-# Plural status messages (complete catalog coverage)
-@plural	Exported {n} swatch to {file}|Exported {n} swatches to {file}	已將 {n} 個色票匯出至 {file}
-@plural	Imported {n} brush from {group}|Imported {n} brushes from {group}	已從 {group} 匯入 {n} 個筆刷
-@plural	Imported {n} swatch from {file}|Imported {n} swatches from {file}	已從 {file} 匯入 {n} 個色票
-@plural	Played {n} step|Played {n} steps	已執行 {n} 個步驟
-@plural	Saved for Web: {n} file|Saved for Web: {n} files	已為網頁儲存 {n} 個檔案
-@plural	Updated {n} linked smart object changed on disk|Updated {n} linked smart objects changed on disk	已更新 {n} 個在磁碟上變更的連結智慧型物件
-@plural	{n} layer recorded by this comp was deleted. Update the comp, or clear the warning.|{n} layers recorded by this comp were deleted. Update the comp, or clear the warning.	此圖層構圖記錄的 {n} 個圖層已刪除。請更新圖層構圖，或清除此警告。
-@plural	{n} plane|{n} planes	{n} 個平面
-@plural	{n} preset|{n} presets	{n} 個預設
-@plural	{n} sample point removed|{n} sample points removed	已移除 {n} 個取樣點
-@plural	{n} slice|{n} slices	{n} 個切片
-@plural	{n} step|{n} steps	{n} 個步驟
-@plural	{warning} (+{n} more brush preset warning)|{warning} (+{n} more brush preset warnings)	{warning}（另有 {n} 個筆刷預設警告）
-@plural	{what} with {n} warning|{what} with {n} warnings	{what}，有 {n} 個警告
+	Apply mask to layer before removing?	移除之前將遮色片套用到圖層嗎？
+	The layer or its mask changed. Drag the mask onto the Trash again.	圖層或其遮色片已變更。請再次將遮色片拖曳到垃圾桶。
+	Delete the vector mask?	要刪除向量遮色片嗎？

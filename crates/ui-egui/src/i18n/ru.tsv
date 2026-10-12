@@ -18,6 +18,22 @@
 # the Russian typographic equivalent, with the space the source carries.
 
 # Menus
+# Plural status messages (complete catalog coverage)
+@plural	Exported {n} swatch to {file}|Exported {n} swatches to {file}	Экспортирован {n} образец в {file}|Экспортировано {n} образца в {file}|Экспортировано {n} образцов в {file}
+@plural	Imported {n} brush from {group}|Imported {n} brushes from {group}	Импортирована {n} кисть из {group}|Импортировано {n} кисти из {group}|Импортировано {n} кистей из {group}
+@plural	Imported {n} swatch from {file}|Imported {n} swatches from {file}	Импортирован {n} образец из {file}|Импортировано {n} образца из {file}|Импортировано {n} образцов из {file}
+@plural	Played {n} step|Played {n} steps	Выполнен {n} шаг|Выполнено {n} шага|Выполнено {n} шагов
+@plural	Saved for Web: {n} file|Saved for Web: {n} files	Сохранено для Web: {n} файл|Сохранено для Web: {n} файла|Сохранено для Web: {n} файлов
+@plural	Updated {n} linked smart object changed on disk|Updated {n} linked smart objects changed on disk	Обновлён {n} связанный смарт-объект, изменённый на диске|Обновлено {n} связанных смарт-объекта, изменённых на диске|Обновлено {n} связанных смарт-объектов, изменённых на диске
+@plural	{n} layer recorded by this comp was deleted. Update the comp, or clear the warning.|{n} layers recorded by this comp were deleted. Update the comp, or clear the warning.	Удалён {n} слой, записанный этой композицией. Обновите композицию или уберите предупреждение.|Удалено {n} слоя, записанных этой композицией. Обновите композицию или уберите предупреждение.|Удалено {n} слоёв, записанных этой композицией. Обновите композицию или уберите предупреждение.
+@plural	{n} plane|{n} planes	{n} плоскость|{n} плоскости|{n} плоскостей
+@plural	{n} preset|{n} presets	{n} набор настроек|{n} набора настроек|{n} наборов настроек
+@plural	{n} sample point removed|{n} sample points removed	Удалена {n} точка образца|Удалено {n} точки образца|Удалено {n} точек образца
+@plural	{n} slice|{n} slices	{n} фрагмент|{n} фрагмента|{n} фрагментов
+@plural	{n} step|{n} steps	{n} шаг|{n} шага|{n} шагов
+@plural	{warning} (+{n} more brush preset warning)|{warning} (+{n} more brush preset warnings)	{warning} (ещё {n} предупреждение о наборе кистей)|{warning} (ещё {n} предупреждения о наборах кистей)|{warning} (ещё {n} предупреждений о наборах кистей)
+@plural	{what} with {n} warning|{what} with {n} warnings	{what} с {n} предупреждением|{what} с {n} предупреждениями|{what} с {n} предупреждениями
+
 # PDF import, export and Smart Object painting.
 	Drop an image, PSD or PDF anywhere to open it.	Перетащите изображение, PSD или PDF в любое место окна, чтобы открыть.
 	Each artboard becomes one PDF page. Layers are flattened; transparency is preserved.	Каждая монтажная область становится страницей PDF. Слои объединяются; прозрачность сохраняется.
@@ -2406,6 +2422,7 @@
 	Show only crosshair while painting	Только перекрестье при рисовании
 	Show slice numbers	Показывать номера фрагментов
 	Show tooltips	Показывать подсказки
+	Enable animations	Включить анимацию
 	Show highlight on rollover	Показывать подсветку при наведении
 	Show bounding box when dragging layer	Показывать рамку при перетаскивании слоя
 	System title bar	Системная строка заголовка
@@ -2955,6 +2972,11 @@ cameraData	Lens	Объектив
 	Amount:	Эффект:
 	Protect:	Защитить:
 	Protect skin tones	Защищать тона кожи
+	Edit points to modify the curve	Изменять кривую по точкам
+	Draw to modify the curve	Рисовать кривую
+curves	Smooth	Сгладить
+	Smooth the curve values	Сгладить значения кривой
+	Drag to draw the curve · {key}-click draws a straight line	Перетащите, чтобы нарисовать кривую · {key}-щелчок рисует прямую линию
 # Select and Mask view modes (#1754)
 	Onion Skin	Калька
 	Marching Ants	Бегущие муравьи
@@ -2991,19 +3013,6 @@ cameraData	Lens	Объектив
 	Fill with {mode}-neutral color (black)	Залить нейтральным цветом режима «{mode}» (черный)
 	Fill with {mode}-neutral color (50% gray)	Залить нейтральным цветом режима «{mode}» (50% серого)
 	(No neutral color exists for {mode} mode.)	(Для режима «{mode}» нет нейтрального цвета.)
-
-# Plural status messages (complete catalog coverage)
-@plural	Exported {n} swatch to {file}|Exported {n} swatches to {file}	Экспортирован {n} образец в {file}|Экспортировано {n} образца в {file}|Экспортировано {n} образцов в {file}
-@plural	Imported {n} brush from {group}|Imported {n} brushes from {group}	Импортирована {n} кисть из {group}|Импортировано {n} кисти из {group}|Импортировано {n} кистей из {group}
-@plural	Imported {n} swatch from {file}|Imported {n} swatches from {file}	Импортирован {n} образец из {file}|Импортировано {n} образца из {file}|Импортировано {n} образцов из {file}
-@plural	Played {n} step|Played {n} steps	Выполнен {n} шаг|Выполнено {n} шага|Выполнено {n} шагов
-@plural	Saved for Web: {n} file|Saved for Web: {n} files	Сохранено для Web: {n} файл|Сохранено для Web: {n} файла|Сохранено для Web: {n} файлов
-@plural	Updated {n} linked smart object changed on disk|Updated {n} linked smart objects changed on disk	Обновлён {n} связанный смарт-объект, изменённый на диске|Обновлено {n} связанных смарт-объекта, изменённых на диске|Обновлено {n} связанных смарт-объектов, изменённых на диске
-@plural	{n} layer recorded by this comp was deleted. Update the comp, or clear the warning.|{n} layers recorded by this comp were deleted. Update the comp, or clear the warning.	Удалён {n} слой, записанный этой композицией. Обновите композицию или уберите предупреждение.|Удалено {n} слоя, записанных этой композицией. Обновите композицию или уберите предупреждение.|Удалено {n} слоёв, записанных этой композицией. Обновите композицию или уберите предупреждение.
-@plural	{n} plane|{n} planes	{n} плоскость|{n} плоскости|{n} плоскостей
-@plural	{n} preset|{n} presets	{n} набор настроек|{n} набора настроек|{n} наборов настроек
-@plural	{n} sample point removed|{n} sample points removed	Удалена {n} точка образца|Удалено {n} точки образца|Удалено {n} точек образца
-@plural	{n} slice|{n} slices	{n} фрагмент|{n} фрагмента|{n} фрагментов
-@plural	{n} step|{n} steps	{n} шаг|{n} шага|{n} шагов
-@plural	{warning} (+{n} more brush preset warning)|{warning} (+{n} more brush preset warnings)	{warning} (ещё {n} предупреждение о наборе кистей)|{warning} (ещё {n} предупреждения о наборах кистей)|{warning} (ещё {n} предупреждений о наборах кистей)
-@plural	{what} with {n} warning|{what} with {n} warnings	{what} с {n} предупреждением|{what} с {n} предупреждениями|{what} с {n} предупреждениями
+	Apply mask to layer before removing?	Применить маску к слою перед удалением?
+	The layer or its mask changed. Drag the mask onto the Trash again.	Слой или его маска изменились. Перетащите маску в корзину ещё раз.
+	Delete the vector mask?	Удалить векторную маску?

@@ -9,6 +9,22 @@
 # Licensed MIT OR Apache-2.0. See LICENSE-translations.txt and ATTRIBUTION.md.
 
 # Menus
+# Plural status messages (complete catalog coverage)
+@plural	Exported {n} swatch to {file}|Exported {n} swatches to {file}	Експортовано {n} зразок до {file}|Експортовано {n} зразки до {file}|Експортовано {n} зразків до {file}
+@plural	Imported {n} brush from {group}|Imported {n} brushes from {group}	Імпортовано {n} пензель із {group}|Імпортовано {n} пензлі із {group}|Імпортовано {n} пензлів із {group}
+@plural	Imported {n} swatch from {file}|Imported {n} swatches from {file}	Імпортовано {n} зразок із {file}|Імпортовано {n} зразки із {file}|Імпортовано {n} зразків із {file}
+@plural	Played {n} step|Played {n} steps	Виконано {n} крок|Виконано {n} кроки|Виконано {n} кроків
+@plural	Saved for Web: {n} file|Saved for Web: {n} files	Збережено для Web: {n} файл|Збережено для Web: {n} файли|Збережено для Web: {n} файлів
+@plural	Updated {n} linked smart object changed on disk|Updated {n} linked smart objects changed on disk	Оновлено {n} зв’язаний смарт-об’єкт, змінений на диску|Оновлено {n} зв’язані смарт-об’єкти, змінені на диску|Оновлено {n} зв’язаних смарт-об’єктів, змінених на диску
+@plural	{n} layer recorded by this comp was deleted. Update the comp, or clear the warning.|{n} layers recorded by this comp were deleted. Update the comp, or clear the warning.	Видалено {n} шар, записаний цією композицією. Оновіть композицію або приберіть попередження.|Видалено {n} шари, записані цією композицією. Оновіть композицію або приберіть попередження.|Видалено {n} шарів, записаних цією композицією. Оновіть композицію або приберіть попередження.
+@plural	{n} plane|{n} planes	{n} площина|{n} площини|{n} площин
+@plural	{n} preset|{n} presets	{n} набір налаштувань|{n} набори налаштувань|{n} наборів налаштувань
+@plural	{n} sample point removed|{n} sample points removed	Видалено {n} точку зразка|Видалено {n} точки зразка|Видалено {n} точок зразка
+@plural	{n} slice|{n} slices	{n} фрагмент|{n} фрагменти|{n} фрагментів
+@plural	{n} step|{n} steps	{n} крок|{n} кроки|{n} кроків
+@plural	{warning} (+{n} more brush preset warning)|{warning} (+{n} more brush preset warnings)	{warning} (ще {n} попередження про набір пензлів)|{warning} (ще {n} попередження про набори пензлів)|{warning} (ще {n} попереджень про набори пензлів)
+@plural	{what} with {n} warning|{what} with {n} warnings	{what} з {n} попередженням|{what} з {n} попередженнями|{what} з {n} попередженнями
+
 # PDF import, export and Smart Object painting.
 	Drop an image, PSD or PDF anywhere to open it.	Перетягніть зображення, PSD або PDF будь-куди, щоб відкрити його.
 	Each artboard becomes one PDF page. Layers are flattened; transparency is preserved.	Кожна монтажна область стає сторінкою PDF. Шари об’єднуються; прозорість зберігається.
@@ -2381,6 +2397,7 @@
 	Show only crosshair while painting	Показувати лише перехрестя під час малювання
 	Show slice numbers	Показувати номери фрагментів
 	Show tooltips	Показувати підказки
+	Enable animations	Увімкнути анімацію
 	Show highlight on rollover	Показувати підсвічування під час наведення
 	Show bounding box when dragging layer	Показувати рамку під час перетягування шару
 	System title bar	Системний рядок заголовка
@@ -3702,6 +3719,11 @@ cameraData	Lens	Об'єктив
 	Amount:	Величина:
 	Protect:	Захистити:
 	Protect skin tones	Захистити тони шкіри
+	Edit points to modify the curve	Змінювати криву за точками
+	Draw to modify the curve	Малювати криву
+curves	Smooth	Згладити
+	Smooth the curve values	Згладити значення кривої
+	Drag to draw the curve · {key}-click draws a straight line	Перетягніть, щоб намалювати криву · {key}-клацання малює пряму лінію
 # Select and Mask view modes (#1754)
 	Onion Skin	Калька
 	Marching Ants	Мурашки
@@ -3744,19 +3766,6 @@ cameraData	Lens	Об'єктив
 	Fill with {mode}-neutral color (black)	Залити нейтральним кольором режиму «{mode}» (чорний)
 	Fill with {mode}-neutral color (50% gray)	Залити нейтральним кольором режиму «{mode}» (50% сірого)
 	(No neutral color exists for {mode} mode.)	(Для режиму «{mode}» немає нейтрального кольору.)
-
-# Plural status messages (complete catalog coverage)
-@plural	Exported {n} swatch to {file}|Exported {n} swatches to {file}	Експортовано {n} зразок до {file}|Експортовано {n} зразки до {file}|Експортовано {n} зразків до {file}
-@plural	Imported {n} brush from {group}|Imported {n} brushes from {group}	Імпортовано {n} пензель із {group}|Імпортовано {n} пензлі із {group}|Імпортовано {n} пензлів із {group}
-@plural	Imported {n} swatch from {file}|Imported {n} swatches from {file}	Імпортовано {n} зразок із {file}|Імпортовано {n} зразки із {file}|Імпортовано {n} зразків із {file}
-@plural	Played {n} step|Played {n} steps	Виконано {n} крок|Виконано {n} кроки|Виконано {n} кроків
-@plural	Saved for Web: {n} file|Saved for Web: {n} files	Збережено для Web: {n} файл|Збережено для Web: {n} файли|Збережено для Web: {n} файлів
-@plural	Updated {n} linked smart object changed on disk|Updated {n} linked smart objects changed on disk	Оновлено {n} зв’язаний смарт-об’єкт, змінений на диску|Оновлено {n} зв’язані смарт-об’єкти, змінені на диску|Оновлено {n} зв’язаних смарт-об’єктів, змінених на диску
-@plural	{n} layer recorded by this comp was deleted. Update the comp, or clear the warning.|{n} layers recorded by this comp were deleted. Update the comp, or clear the warning.	Видалено {n} шар, записаний цією композицією. Оновіть композицію або приберіть попередження.|Видалено {n} шари, записані цією композицією. Оновіть композицію або приберіть попередження.|Видалено {n} шарів, записаних цією композицією. Оновіть композицію або приберіть попередження.
-@plural	{n} plane|{n} planes	{n} площина|{n} площини|{n} площин
-@plural	{n} preset|{n} presets	{n} набір налаштувань|{n} набори налаштувань|{n} наборів налаштувань
-@plural	{n} sample point removed|{n} sample points removed	Видалено {n} точку зразка|Видалено {n} точки зразка|Видалено {n} точок зразка
-@plural	{n} slice|{n} slices	{n} фрагмент|{n} фрагменти|{n} фрагментів
-@plural	{n} step|{n} steps	{n} крок|{n} кроки|{n} кроків
-@plural	{warning} (+{n} more brush preset warning)|{warning} (+{n} more brush preset warnings)	{warning} (ще {n} попередження про набір пензлів)|{warning} (ще {n} попередження про набори пензлів)|{warning} (ще {n} попереджень про набори пензлів)
-@plural	{what} with {n} warning|{what} with {n} warnings	{what} з {n} попередженням|{what} з {n} попередженнями|{what} з {n} попередженнями
+	Apply mask to layer before removing?	Застосувати маску до шару перед видаленням?
+	The layer or its mask changed. Drag the mask onto the Trash again.	Шар або його маска змінилися. Перетягніть маску до кошика ще раз.
+	Delete the vector mask?	Видалити векторну маску?
