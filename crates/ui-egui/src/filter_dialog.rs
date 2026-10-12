@@ -211,6 +211,21 @@ const FULL_RESOLUTION_PREVIEW: &[&str] = &[
     "filter.stylize.wind",
     "filter.stylize.extrude",
     "filter.render.tree",
+    "filter.sharpen.sharpen",
+    "filter.sharpen.sharpenMore",
+    "filter.sharpen.sharpenEdges",
+    "filter.sharpen.unsharpMask",
+    "filter.sharpen.smartSharpen",
+    "filter.other.highPass",
+    "filter.stylize.findEdges",
+    "filter.stylize.emboss",
+    "filter.noise.median",
+    "filter.noise.despeckle",
+    "filter.other.maximum",
+    "filter.other.minimum",
+    "filter.blur.motionBlur",
+    "filter.blur.boxBlur",
+    "filter.blur.surfaceBlur",
 ];
 
 /// Whether `command` with `params` previews at full resolution: [`FULL_RESOLUTION_PREVIEW`], every
