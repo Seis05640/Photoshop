@@ -614,3 +614,65 @@ fn a_finished_job_beeps_when_the_preference_is_on() {
     frames_for(&mut h, 800);
     assert_eq!(BEEPS.load(Ordering::Relaxed), 1, "one beep for the finished job");
 }
+
+#[test]
+fn printing_keeps_drawing_and_reports_only_the_final_spooler_result() {
+    for success in [true, false] {
+        let mut h = app_harness();
+        let gate = Arc::new(AtomicBool::new(false));
+        let worker_gate = gate.clone();
+        let Started::Job(id) = h
+            .state_mut()
+            .session
+            .start_job(
+                "file.print",
+                json!({}),
+                "Print",
+                false,
+                move |_| {
+                    while !worker_gate.load(Ordering::Relaxed) {
+                        std::thread::sleep(Duration::from_millis(1));
+                    }
+                    if success {
+                        Ok(json!({"sent": true, "spooler": "request id is Office-42", "pdf": null}))
+                    } else {
+                        Err(photocraft_engine::EngineError::Other("queue refused".into()))
+                    }
+                },
+                |_, result| Ok(result),
+            )
+            .unwrap()
+        else {
+            panic!("must run on a worker")
+        };
+        let frame = h.state().frame;
+        h.run_steps(4);
+        assert!(h.state().frame > frame);
+        assert!(!h.state().ui.status.contains("Sent to the printer"));
+        h.key_press(egui::Key::Escape);
+        h.run_steps(2);
+        assert!(h.state().session.job(id).is_some(), "Esc cannot retract a submitted job");
+        let (request, _) = crate::control::ControlRequest::new("jobs.cancel", json!({"job": id.0}));
+        let ctx = h.ctx.clone();
+        let crate::control::Outcome::Done(reply) = crate::control::handle(h.state_mut(), &ctx, &request) else { panic!("cancel replies immediately") };
+        assert_eq!(reply["result"]["cancelled"], 0, "control must not falsely report cancellation: {reply}");
+        let st = h.state_mut().session.active_mut().unwrap();
+        st.saved_revision = st.revision;
+        assert!(press_window_close(h.state_mut()), "quit waits for print submission");
+        assert!(h.state().jobs.close_after_saves);
+        gate.store(true, Ordering::Relaxed);
+        let deadline = Instant::now() + Duration::from_secs(10);
+        while h.state().session.has_jobs() && Instant::now() < deadline {
+            h.step();
+        }
+        assert!(!h.state().session.has_jobs());
+        assert!(!h.state().jobs.close_after_saves, "close repeats on success or is cleared for a visible error");
+        if success {
+            assert!(h.state().ui.status.contains("Office-42"), "{}", h.state().ui.status);
+            assert!(!h.state().ui.status_error);
+        } else {
+            assert!(h.state().ui.status.contains("queue refused"), "{}", h.state().ui.status);
+            assert!(h.state().ui.status_error);
+        }
+    }
+}
