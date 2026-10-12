@@ -2707,3 +2707,94 @@ curves	Smooth	Suavizar
 	Apply mask to layer before removing?	¿Aplicar la máscara a la capa antes de eliminarla?
 	The layer or its mask changed. Drag the mask onto the Trash again.	La capa o su máscara ha cambiado. Arrastre de nuevo la máscara a la papelera.
 	Delete the vector mask?	¿Eliminar la máscara vectorial?
+
+# Responsive artboard workflow translations.
+	Artboard Overview · All formats	Resumen de mesas de trabajo · Todos los formatos
+	Artboard Overview	Resumen de mesas de trabajo
+	Overview · all formats	Ver todos los formatos
+	Responsive layout role	Rol del diseño adaptable
+	artboards	mesas de trabajo
+	This document has no artboards yet.	Este documento aún no tiene mesas de trabajo.
+	Select on canvas	Seleccionar en el lienzo
+	Reflow	Reflujo
+	Responsive variants	Variantes adaptables
+	Semantic reflow	Reflujo semántico
+	Proportional fit	Ajuste proporcional
+	Semantic reflow · keep type size	Reflujo semántico · conservar tamaño del texto
+	Proportional fit · scale all	Ajuste proporcional · escalar todo
+	suggested	sugerido
+	Set as master	Establecer como principal
+	Switch variant	Cambiar variante
+	Variant	Variante
+	Badge	Insignia
+	Price	Precio
+	Disclaimer	Aviso legal
+	Image mark	Marca de imagen
+	Stretch	Estirar
+	Size limits in pixels (0 = none)	Límites de tamaño en píxeles (0 = ninguno)
+	Maximum size must be at least the minimum size	El tamaño máximo debe ser al menos igual al mínimo
+	Safe area	Área segura
+	Insets as a fraction of artboard size	Márgenes como fracción del tamaño de la mesa de trabajo
+	Reset to master rule	Restablecer regla maestra
+	Update variants	Actualizar variantes
+	Variant name	Nombre de variante
+	Arrow keys navigate; Enter selects and zooms	Las flechas navegan; Intro selecciona y amplía
+	Review findings	Revisar hallazgos
+	Results are capped; some findings are omitted	Los resultados están limitados; se omiten algunos hallazgos
+	No findings to review	No hay hallazgos que revisar
+	Safe Areas	Áreas seguras
+	Responsive Template…	Plantilla adaptable…
+	Text reflow	Ajuste de texto
+	Preserve	Mantener
+	Rewrap	Reajustar
+	Rewrap with auto height	Reajustar con altura automática
+	Rewrap and shrink	Reajustar y reducir
+	Responsive variants updated with conflicts	Responsive variants updated with conflicts
+	These local layers were preserved: {layers}	These local layers were preserved: {layers}
+	More preserved layers are listed in the command result.	More preserved layers are listed in the command result.
+	Responsive Warnings	Avisos adaptativos
+	All findings	Todos los hallazgos
+	Outside artboard	Fuera del lienzo
+	Semantic collision	Colisión semántica
+	Safe-area violation	Incumplimiento del área segura
+	Review all findings	Revisar todos los hallazgos
+	Filter findings	Filtrar hallazgos
+	From file	Desde archivo
+	Manual	Manual
+	Suggested	Sugerida
+	Suggested role	Rol sugerido
+	Apply role to similar layers	Aplicar el rol a capas similares
+	Layer name or text	Nombre de capa o texto
+	Layer name	Nombre de capa
+	Text layer	Capa de texto
+	Covers most of artboard	Cubre la mayor parte de la mesa
+	Shape layer	Capa de forma
+	No strong role signal	Sin una señal clara del rol
+	Explicit role	Rol explícito
+	Layer unavailable	Capa no disponible
+	Master layers removed from variant: {count}	Capas maestras eliminadas de la variante: {count}
+	Overrides dropped because their layers no longer exist: {count}	Anulaciones descartadas porque sus capas ya no existen: {count}
+	Previous Artboard Variant	Variante de mesa de trabajo anterior
+	Next Artboard Variant	Variante de mesa de trabajo siguiente
+	Select {name} ({layer})	Seleccionar {name} ({layer})
+	Could not select conflict layer	No se pudo seleccionar la capa en conflicto
+	The conflict layer no longer exists	La capa en conflicto ya no existe
+	Layout review: {findings} findings on {boards} artboards.	Revisión del diseño: {findings} hallazgos en {boards} mesas de trabajo.
+	Some artboards could not be checked and count as affected.	No se pudieron revisar algunas mesas de trabajo y se consideran afectadas.
+	Skip artboards with findings or incomplete checks	Omitir mesas con hallazgos o comprobaciones incompletas
+	No layout findings on {boards} artboards.	No se encontraron problemas de diseño en {boards} mesas de trabajo.
+	Some artboard checks were incomplete; they count as affected.	Algunas revisiones de mesas quedaron incompletas y se consideran afectadas.
+@plural	Exported {n} swatch to {file}|Exported {n} swatches to {file}	Se exportó {n} muestra a {file}|Se exportaron {n} muestras a {file}
+@plural	Imported {n} brush from {group}|Imported {n} brushes from {group}	Se importó {n} pincel de {group}|Se importaron {n} pinceles de {group}
+@plural	Imported {n} swatch from {file}|Imported {n} swatches from {file}	Se importó {n} muestra de {file}|Se importaron {n} muestras de {file}
+@plural	Played {n} step|Played {n} steps	Se reprodujo {n} paso|Se reprodujeron {n} pasos
+@plural	Updated {n} linked smart object changed on disk|Updated {n} linked smart objects changed on disk	Se actualizó {n} objeto inteligente vinculado modificado en el disco|Se actualizaron {n} objetos inteligentes vinculados modificados en el disco
+@plural	files|Saved for Web: {n} file	Archivos: {n}|Guardado para web: {n} archivo
+@plural	{n} layer recorded by this comp was deleted. Update the comp, or clear the warning.|{n} layers recorded by this comp were deleted. Update the comp, or clear the warning.	Se eliminó {n} capa registrada por esta composición. Actualice la composición o borre la advertencia.|Se eliminaron {n} capas registradas por esta composición. Actualice la composición o borre la advertencia.
+@plural	{n} plane|{n} planes	{n} plano|{n} planos
+@plural	{n} preset|{n} presets	{n} ajuste preestablecido|{n} ajustes preestablecidos
+@plural	{n} sample point removed|{n} sample points removed	Se eliminó {n} punto de muestra|Se eliminaron {n} puntos de muestra
+@plural	{n} slice|{n} slices	{n} sector|{n} sectores
+@plural	{n} step|{n} steps	{n} paso|{n} pasos
+@plural	{warning} (+{n} more brush preset warning)|{warning} (+{n} more brush preset warnings)	{warning} (+{n} aviso más de ajustes de pincel)|{warning} (+{n} avisos más de ajustes de pincel)
+@plural	{what} with {n} warning|{what} with {n} warnings	{what} con {n} aviso|{what} con {n} avisos

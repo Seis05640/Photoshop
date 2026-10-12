@@ -3527,6 +3527,7 @@ pub fn canvas_view(app: &mut PhotocraftApp, ui: &mut egui::Ui, idx: usize, rect:
         }
         app.ui.views[idx] = view.clone();
     }
+    crate::artboard_ui::draw_responsive_markers(app, &painter, &xf);
     view
 }
 
