@@ -152,6 +152,7 @@ pub const SELECTION_MENU: &[Row] = &[
     None,
     Some(("Save Selection…", "select.saveSelection")),
     Some(("Make Work Path…", "select.toWorkPath")),
+    Some(("Make Shape from Selection…", "shape.fromSelection")),
     None,
     Some(("Layer via Copy", "layer.new.layerViaCopy")),
     Some(("Layer via Cut", "layer.new.layerViaCut")),
@@ -511,9 +512,10 @@ pub fn choose(app: &mut PhotocraftApp, ctx: &Context, command: &str) {
         choose_type(app, ctx, command)
     } else if menu.tool == Tool::Pen && !menu.transform {
         choose_pen(app, ctx, &menu, command)
-    } else if command == "select.toWorkPath" {
-        // Photoshop's Make Work Path… asks for the tolerance first.
-        spec_dialog(app, command, "Make Work Path", r##"{"tolerance":0.5..10=2}"##, serde_json::Map::new());
+    } else if command == "select.toWorkPath" || command == "shape.fromSelection" || command == "select.convertToShape" {
+        // Asks for the tolerance first.
+        let title = if command == "select.toWorkPath" { "Make Work Path" } else { "Make Shape from Selection" };
+        spec_dialog(app, command, title, r##"{"tolerance":0.5..10=2}"##, serde_json::Map::new());
         Ok(())
     } else {
         crate::menus::invoke(app, ctx, command, json!({})).map(|_| ())
@@ -961,6 +963,7 @@ mod tests {
                 None,
                 Some("Save Selection…"),
                 Some("Make Work Path…"),
+                Some("Make Shape from Selection…"),
                 None,
                 Some("Layer via Copy"),
                 Some("Layer via Cut"),
@@ -1039,6 +1042,15 @@ mod tests {
         crate::dialogs::confirm(&mut app, dialog).unwrap();
         assert!(app.session.active().unwrap().doc.work_path.is_some());
         assert_eq!(app.session.journal.last().map(|(id, _)| id.as_str()), Some("select.toWorkPath"));
+
+        // Make Shape from Selection… asks for the tolerance, then creates a shape layer.
+        app.run("select.rect", json!({"x": 4, "y": 4, "width": 10, "height": 10})).unwrap();
+        assert!(open(&mut app, &Context::default(), Tool::EllipseMarquee, [10.0, 10.0]));
+        choose(&mut app, &Context::default(), "shape.fromSelection");
+        let dialog = app.ui.dialogs.last().map(|d| d.id).expect("tolerance dialog");
+        crate::dialogs::confirm(&mut app, dialog).unwrap();
+        assert!(matches!(app.session.active().unwrap().doc.layers.last().unwrap().content, photocraft_doc::LayerContent::Shape(_)));
+        assert_eq!(app.session.journal.last().map(|(id, _)| id.as_str()), Some("shape.fromSelection"));
     }
 
     #[test]

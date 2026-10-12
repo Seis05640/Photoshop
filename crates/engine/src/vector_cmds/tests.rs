@@ -363,6 +363,30 @@ fn selection_to_work_path_roundtrip_iou() {
     let r = s.execute("select.convertToShape", json!({"fill": "#00ff00"})).unwrap();
     assert_eq!(r["fill"], "#00ff00");
     assert_eq!(r["path"]["subpaths"].as_array().unwrap().len(), 3);
+
+    // shape.fromSelection alias with simplify tolerance
+    s.execute("path.toSelection", json!({"name": "src"})).unwrap();
+    let r_fine = s.execute("shape.fromSelection", json!({"tolerance": 0.5, "name": "Fine Shape"})).unwrap();
+    assert_eq!(r_fine["name"], "Fine Shape");
+    let knots = |r: &Value| r["path"]["subpaths"].as_array().unwrap().iter().map(|sp| sp["knots"].as_array().unwrap().len()).sum::<usize>();
+    let fine_knots = knots(&r_fine);
+
+    s.execute("path.toSelection", json!({"name": "src"})).unwrap();
+    let r_coarse = s.execute("layer.new.shapeFromSelection", json!({"simplifyTolerance": 5.0, "name": "Coarse Shape"})).unwrap();
+    assert_eq!(r_coarse["name"], "Coarse Shape");
+    let coarse_knots = knots(&r_coarse);
+    assert!(fine_knots > coarse_knots, "fine tolerance {fine_knots} must have more knots than coarse {coarse_knots}");
+
+    // Undo restores state
+    assert!(s.undo());
+    assert_eq!(s.active().unwrap().doc.layers.last().unwrap().name, "Fine Shape");
+}
+
+#[test]
+fn shape_from_selection_requires_selection() {
+    let mut s = session(100, 100, 8);
+    assert!(!s.is_enabled("shape.fromSelection"));
+    assert!(s.execute("shape.fromSelection", json!({})).is_err());
 }
 
 #[test]
