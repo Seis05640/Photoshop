@@ -16,6 +16,10 @@
 # letters; the trailing "…" of dialog commands is kept.
 
 # Guide layout dialog
+# Unavailable View overlays
+	Bristle brush previews are not implemented	ブリッスルブラシのプレビューは未実装です
+	Artboard-specific guides are not implemented	アートボード固有のガイドは未実装です
+
 	Rows	行
 	Number	数
 	Top:	上:
@@ -3626,7 +3630,3 @@ cameraData	Lens	レンズ
 	Apply mask to layer before removing?	削除する前にマスクをレイヤーに適用しますか？
 	The layer or its mask changed. Drag the mask onto the Trash again.	レイヤーまたはそのマスクが変更されました。もう一度マスクをゴミ箱にドラッグしてください。
 	Delete the vector mask?	ベクトルマスクを削除しますか？
-
-# Unavailable View overlays
-	Bristle brush previews are not implemented	ブリッスルブラシのプレビューは未実装です
-	Artboard-specific guides are not implemented	アートボード固有のガイドは未実装です

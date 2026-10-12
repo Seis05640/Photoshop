@@ -16,6 +16,10 @@
 # stay as they are; the trailing "…" of dialog commands is kept.
 
 # Guide layout dialog
+# Unavailable View overlays
+	Bristle brush previews are not implemented	As visualizações de pincéis de cerdas ainda não foram implementadas
+	Artboard-specific guides are not implemented	As guias específicas das pranchetas ainda não foram implementadas
+
 	Rows	Linhas
 	Number	Número
 	Margin	Margem
@@ -3806,7 +3810,3 @@ layerLabel	No Color	Sem cor
 	Apply mask to layer before removing?	Aplicar a máscara à camada antes de removê-la?
 	The layer or its mask changed. Drag the mask onto the Trash again.	A camada ou a máscara mudou. Arraste a máscara para a Lixeira novamente.
 	Delete the vector mask?	Excluir a máscara vetorial?
-
-# Unavailable View overlays
-	Bristle brush previews are not implemented	As visualizações de pincéis de cerdas ainda não foram implementadas
-	Artboard-specific guides are not implemented	As guias específicas das pranchetas ainda não foram implementadas

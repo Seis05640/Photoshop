@@ -20,6 +20,10 @@
 # Menus
 
 # Guide layout dialog
+# Unavailable View overlays
+	Bristle brush previews are not implemented	Предпросмотр щетинных кистей пока не реализован
+	Artboard-specific guides are not implemented	Направляющие отдельных монтажных областей пока не реализованы
+
 	Rows	Строки
 	Number	Количество
 	Margin	Поля
@@ -2961,7 +2965,3 @@ cameraData	Lens	Объектив
 	Apply mask to layer before removing?	Применить маску к слою перед удалением?
 	The layer or its mask changed. Drag the mask onto the Trash again.	Слой или его маска изменились. Перетащите маску в корзину ещё раз.
 	Delete the vector mask?	Удалить векторную маску?
-
-# Unavailable View overlays
-	Bristle brush previews are not implemented	Предпросмотр щетинных кистей пока не реализован
-	Artboard-specific guides are not implemented	Направляющие отдельных монтажных областей пока не реализованы
