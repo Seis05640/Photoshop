@@ -131,6 +131,7 @@ fn orientation_6_jpeg_converts_upright_and_rotates_back() {
         assert_eq!(v["name"], p.file_name().unwrap().to_str().unwrap());
         v.as_object_mut().unwrap().remove("file");
         v.as_object_mut().unwrap().remove("name");
+        v.as_object_mut().unwrap().remove("path");
         v
     };
     let (ia, ib) = (info(&a), info(&b));
