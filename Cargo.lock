@@ -4573,6 +4573,7 @@ dependencies = [
  "egui_kittest",
  "flate2",
  "log",
+ "memory-stats",
  "photocraft-algo",
  "photocraft-cms",
  "photocraft-codecs",
@@ -4597,6 +4598,7 @@ dependencies = [
  "serde_json",
  "sys-locale",
  "toml",
+ "winsafe",
 ]
 
 [[package]]
