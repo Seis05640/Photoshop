@@ -754,6 +754,23 @@ mod tests {
     }
 
     #[test]
+    fn installed_profiles_scans_require_trusted_filesystem_access() {
+        let mut headless = crate::Headless::new();
+        let (_, _, workspace) = roots("installed-profiles-authority");
+        let mut scoped = crate::Headless::with_workspace(workspace);
+        for params in [serde_json::json!({}), serde_json::json!({"class": "output", "colorSpace": "cmyk"}), serde_json::json!({"path": "/outside/profile.icc"})]
+        {
+            assert!(authorize_engine_command("edit.installedProfiles", &params).is_err());
+            assert!(authorize_desktop_engine_command("edit.installedProfiles", &params).is_err());
+            // A workspace grant cannot authorize implicit scans of OS/user profile folders.
+            for session in [&mut headless, &mut scoped] {
+                let error = session.command_run("edit.installedProfiles", params.clone()).unwrap_err();
+                assert!(error.to_string().contains("ambient filesystem paths"), "{error}");
+            }
+        }
+    }
+
+    #[test]
     fn registry_filesystem_path_params_are_classified() {
         let probe = serde_json::json!({
             "path": "/outside/photocraft-probe",
