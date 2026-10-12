@@ -1631,7 +1631,7 @@ fn combine_shapes(s: &mut Session, p: &Value, op: &str, label: &str) -> Result<V
 }
 
 fn selection_to_shape(s: &mut Session, p: &Value) -> Result<Value> {
-    let tol = f64p(p, "tolerance").unwrap_or(2.0).clamp(0.5, 10.0);
+    let tol = f64p(p, "tolerance").or_else(|| f64p(p, "simplifyTolerance")).unwrap_or(2.0).clamp(0.5, 10.0);
     let d = s.active().ok_or(EngineError::NoDocument)?;
     let area = d.doc.bounds();
     let mask = sel::mask_from_surface(d.doc.selection.as_ref(), area);
@@ -1888,7 +1888,23 @@ pub fn specs() -> Vec<CommandSpec> {
             "select.convertToShape",
             "Convert Selection to Shape",
             [],
-            r##"{"tolerance":px=2,"fill":"#rrggbb"=foreground,"name":str?} → shape.info"##,
+            r##"{"tolerance":0.5..10 px=2,"fill":"#rrggbb"=foreground,"name":str?} → shape.info"##,
+            has_selection,
+            selection_to_shape
+        ),
+        spec!(
+            "shape.fromSelection",
+            "Shape from Selection",
+            ["Layer", "New"],
+            r##"{"tolerance":0.5..10 px=2,"fill":"#rrggbb"=foreground,"name":str?} → shape.info"##,
+            has_selection,
+            selection_to_shape
+        ),
+        spec!(
+            "layer.new.shapeFromSelection",
+            "Shape from Selection",
+            ["Layer", "New"],
+            r##"{"tolerance":0.5..10 px=2,"fill":"#rrggbb"=foreground,"name":str?} → shape.info"##,
             has_selection,
             selection_to_shape
         ),
