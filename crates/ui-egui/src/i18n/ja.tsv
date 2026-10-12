@@ -3652,3 +3652,8 @@ curves	Smooth	スムーズ
 @plural	{n} step|{n} steps	{n} ステップ
 @plural	{warning} (+{n} more brush preset warning)|{warning} (+{n} more brush preset warnings)	{warning}(ほかにブラシプリセットの警告 {n} 件)
 @plural	{what} with {n} warning|{what} with {n} warnings	{what}(警告 {n} 件)
+	Pro Medium Gray	プロ(中間グレー)
+	Solarized	Solarized
+	Breeze	Breeze
+	Pro Light Gray	プロ(ライトグレー)
+	Pro Light	プロ(ライト)
