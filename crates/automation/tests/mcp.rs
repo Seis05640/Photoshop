@@ -263,18 +263,24 @@ async fn command_ids_in_tool_schemas_exist() {
     client.cancel().await.unwrap();
 }
 
-/// `UI_SET_FIELDS` in `crates/ui-egui/src/control.rs`, read from source. The desktop shell owns the
+/// Core and Shape `ui.set` field arrays in `crates/ui-egui/src/control.rs`, read from source. The desktop shell owns the
 /// list; this crate describes it over MCP without depending on the UI crate (both are L6).
 /// Anchored on the declaration, not on the doc comment that mentions it first, and checked against
 /// the declared array length so a mis-parse fails loudly instead of testing the wrong names.
 fn ui_set_fields() -> Vec<String> {
     let src = std::fs::read_to_string(std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../ui-egui/src/control.rs")).expect("ui-egui control.rs");
-    let (_, rest) = src.split_once("UI_SET_FIELDS: [&str; ").expect("UI_SET_FIELDS is declared");
-    let declared: usize = rest.split_once(']').expect("declared length").0.parse().expect("declared length");
-    let body = rest.split_once('[').expect("field array").1.split_once("];").expect("terminated array").0;
-    let fields: Vec<String> = body.split('"').skip(1).step_by(2).map(str::to_string).collect();
-    assert_eq!(fields.len(), declared, "parsed {fields:?} from UI_SET_FIELDS; its source shape changed");
-    fields
+    ["UI_SET_FIELDS", "SHAPE_UI_SET_FIELDS"]
+        .into_iter()
+        .flat_map(|name| {
+            let declaration = format!("const {name}: [&str; ");
+            let (_, rest) = src.split_once(&declaration).expect("field array is declared");
+            let declared: usize = rest.split_once(']').expect("declared length").0.parse().expect("declared length");
+            let body = rest.split_once('[').expect("field array").1.split_once("];").expect("terminated array").0;
+            let fields: Vec<String> = body.split('"').skip(1).step_by(2).map(str::to_string).collect();
+            assert_eq!(fields.len(), declared, "parsed {fields:?} from {name}; its source shape changed");
+            fields
+        })
+        .collect()
 }
 
 /// #1548: `ui_set` must name every field `ui.set` accepts. An agent copies this list out of
@@ -1214,9 +1220,24 @@ async fn convention_resources_are_live_json() {
         serde_json::from_str::<Value>(v["contents"][0]["text"].as_str().unwrap()).unwrap()
     };
     assert!(read("photocraft://document").await["document"].is_null());
+    let before = read("photocraft://commands").await;
+    let layer_new = before.as_array().unwrap().iter().find(|c| c["id"] == "layer.new.layer").unwrap();
+    assert_eq!(layer_new["enabled"], false);
     json_of(&call(&client, "doc_new", json!({"width":8,"height":6})).await);
     assert_eq!(read("photocraft://document").await["width"], 8);
-    assert_eq!(read("photocraft://commands").await, json_of(&call(&client, "command_list", json!({})).await));
+    // Keep Purge All enabled through session-owned history. Otherwise unrelated
+    // parallel tests can populate global render caches between catalog reads.
+    json_of(&call(&client, "command_run", json!({"id":"layer.new.layer", "params":{"name":"Catalog history"}})).await);
+    let resource = read("photocraft://commands").await;
+    let tool = json_of(&call(&client, "command_list", json!({})).await);
+    let resource = resource.as_array().unwrap();
+    let tool = tool.as_array().unwrap();
+    let layer_new = resource.iter().find(|c| c["id"] == "layer.new.layer").unwrap();
+    assert_eq!(layer_new["enabled"], true);
+    assert_eq!(resource.len(), tool.len());
+    for (resource_command, tool_command) in resource.iter().zip(tool) {
+        assert_eq!(resource_command, tool_command, "command {}", resource_command["id"]);
+    }
     assert!(client.read_resource(rmcp::model::ReadResourceRequestParams::new("photocraft://missing")).await.is_err());
     let preview = call(&client, "render_preview", json!({"max_side":4})).await;
     assert!(preview.content.iter().any(|c| c.as_image().is_some()));

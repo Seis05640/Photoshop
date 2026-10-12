@@ -561,6 +561,7 @@
 	Default colours (D)	Цвета по умолчанию (D)
 	Brush Tool Options	Параметры кисти
 	Opacity	Непрозрачность
+	Stop opacity	Непрозрачность точки
 	Flow	Нажим
 	Smoothing	Сглаживание
 	Size	Размер
@@ -1806,6 +1807,23 @@
 
 # Plurals
 @plural	{n} item|{n} items	{n} элемент|{n} элемента|{n} элементов
+
+# Plural status messages (complete catalog coverage)
+@plural	Exported {n} swatch to {file}|Exported {n} swatches to {file}	Экспортирован {n} образец в {file}|Экспортировано {n} образца в {file}|Экспортировано {n} образцов в {file}
+@plural	Imported {n} brush from {group}|Imported {n} brushes from {group}	Импортирована {n} кисть из {group}|Импортировано {n} кисти из {group}|Импортировано {n} кистей из {group}
+@plural	Imported {n} swatch from {file}|Imported {n} swatches from {file}	Импортирован {n} образец из {file}|Импортировано {n} образца из {file}|Импортировано {n} образцов из {file}
+@plural	Played {n} step|Played {n} steps	Выполнен {n} шаг|Выполнено {n} шага|Выполнено {n} шагов
+@plural	Saved for Web: {n} file|Saved for Web: {n} files	Сохранено для Web: {n} файл|Сохранено для Web: {n} файла|Сохранено для Web: {n} файлов
+@plural	Updated {n} linked smart object changed on disk|Updated {n} linked smart objects changed on disk	Обновлён {n} связанный смарт-объект, изменённый на диске|Обновлено {n} связанных смарт-объекта, изменённых на диске|Обновлено {n} связанных смарт-объектов, изменённых на диске
+@plural	{n} layer recorded by this comp was deleted. Update the comp, or clear the warning.|{n} layers recorded by this comp were deleted. Update the comp, or clear the warning.	Удалён {n} слой, записанный этой композицией. Обновите композицию или уберите предупреждение.|Удалено {n} слоя, записанных этой композицией. Обновите композицию или уберите предупреждение.|Удалено {n} слоёв, записанных этой композицией. Обновите композицию или уберите предупреждение.
+@plural	{n} plane|{n} planes	{n} плоскость|{n} плоскости|{n} плоскостей
+@plural	{n} preset|{n} presets	{n} набор настроек|{n} набора настроек|{n} наборов настроек
+@plural	{n} sample point removed|{n} sample points removed	Удалена {n} точка образца|Удалено {n} точки образца|Удалено {n} точек образца
+@plural	{n} slice|{n} slices	{n} фрагмент|{n} фрагмента|{n} фрагментов
+@plural	{n} step|{n} steps	{n} шаг|{n} шага|{n} шагов
+@plural	{warning} (+{n} more brush preset warning)|{warning} (+{n} more brush preset warnings)	{warning} (ещё {n} предупреждение о наборе кистей)|{warning} (ещё {n} предупреждения о наборах кистей)|{warning} (ещё {n} предупреждений о наборах кистей)
+@plural	{what} with {n} warning|{what} with {n} warnings	{what} с {n} предупреждением|{what} с {n} предупреждениями|{what} с {n} предупреждениями
+
 @plural	{n} Layer|{n} Layers	{n} слой|{n} слоя|{n} слоёв
 @plural	{n} layer|{n} layers	{n} слой|{n} слоя|{n} слоёв
 @plural	Group · {n} layer|Group · {n} layers	Группа · {n} слой|Группа · {n} слоя|Группа · {n} слоёв
@@ -2788,6 +2806,35 @@ fontWeight	Italic	Курсив
 	Missing delete command	Отсутствует команда удаления
 	Invalid delete command	Недопустимая команда удаления
 	Layer deleted, but confirmation preference could not be saved: {error}	Слой удалён, но не удалось сохранить настройку подтверждения: {error}
+	Align to Canvas	Выровнять по холсту
+	Arrowheads	Наконечники стрелок
+	Bring Shape Forward	Переместить фигуру вперёд
+	Bring Shape to Front	Переместить фигуру на передний план
+	Constrain Proportions	Сохранить пропорции
+	Distribute Horizontally	Распределить по горизонтали
+	Distribute Vertically	Распределить по вертикали
+	End	Конец
+	Path Alignment	Выравнивание контуров
+	Path Arrangement	Порядок контуров
+	Path Operations	Операции с контурами
+	Path Options	Параметры контура
+	Send Shape Backward	Переместить фигуру назад
+	Send Shape to Back	Переместить фигуру на задний план
+	Show Path	Показать контур
+	Start	Начало
+	Align Edges	Выровнять края
+	Unconstrained	Без ограничений
+	Fixed Size	Фиксированный размер
+	Proportional	Пропорционально
+	Smooth Indents	Сгладить впадины
+	Concavity:	Вогнутость:
+	Link with Layer	Связать со слоем
+	Solid Color	Сплошной цвет
+	Color Picker	Выбор цвета
+	Recent Colors	Недавно использованные цвета
+	No recent colors	Нет недавно использованных цветов
+	Color opacity	Непрозрачность цвета
+	Show Transform Controls	Показать элементы управления трансформацией
 	Add a layer style	Добавить стиль слоя
 	Add a mask  (from the selection; {key} inverts)	Добавить маску  (из выделения; {key} инвертирует)
 	Add an adjustment	Добавить коррекцию
@@ -2826,7 +2873,6 @@ fontWeight	Italic	Курсив
 	Filter for smart objects	Фильтр смарт-объектов
 	Filter for type layers	Фильтр текстовых слоёв
 	Fixed Ratio	Заданные пропорции
-	Fixed Size	Заданный размер
 	Follows only edges this close to the pointer ([ and ] change it)	Следует только за краями на таком расстоянии от указателя ([ и ] меняют его)
 	Hide Properties	Скрыть свойства
 	Higher values follow only edges that contrast sharply with their surroundings	Чем выше значение, тем только более контрастные края учитываются
@@ -2851,7 +2897,6 @@ fontWeight	Italic	Курсив
 	Reflected Gradient	Зеркальный градиент
 	Reset to defaults	Сбросить к значениям по умолчанию
 	Set additional smoothing options	Дополнительные параметры сглаживания
-	Show Transform Controls	Показать управляющие элементы трансформации
 	Subtract from selection  ({key})	Вычесть из выделения  ({key})
 	Swaps height and width	Меняет местами высоту и ширину
 	Tolerance	Допуск
@@ -2906,7 +2951,6 @@ cameraData	Lens	Объектив
 	Click: smooth point · Double-click: corner · Drag a point: move · Click first point: close · {key} finish	Клик: гладкая точка · двойной клик: угол · перетаскивание точки: переместить · клик по первой точке: замкнуть · {key} завершить
 	Scale:	Масштаб:
 	Snap to Origin	Привязать к началу координат
-	Link with Layer	Связать со слоем
 	Rasterize Layer Style	Растрировать стиль слоя
 	Search settings…	Поиск настроек…
 	No matching settings	Нет подходящих настроек
